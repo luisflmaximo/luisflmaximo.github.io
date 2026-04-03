@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -7,30 +7,135 @@
   <meta name="description" content="Management student at ISCTE Business School. Discover my projects, curriculum and articles.">
   <meta name="keywords" content="Luís Máximo, portfolio, curriculum, management, ISCTE Business School, projects, articles">
   <meta name="author" content="Luís Máximo">
-  <meta name="robots" content="index, follow">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <link rel="canonical" href="https://luisflmaximo.github.io/en/">
   <link rel="alternate" hreflang="en" href="https://luisflmaximo.github.io/en/">
   <link rel="alternate" hreflang="pt" href="https://luisflmaximo.github.io/pt/">
+  <link rel="alternate" hreflang="x-default" href="https://luisflmaximo.github.io/">
   <meta property="og:site_name" content="Luís Máximo">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="pt_PT">
   <meta property="og:title" content="Luís Máximo — Portfolio">
   <meta property="og:description" content="Management student at ISCTE Business School. Discover my projects, curriculum and articles.">
   <meta property="og:url" content="https://luisflmaximo.github.io/en/">
   <meta property="og:image" content="https://luisflmaximo.github.io/assets/images/banner.png">
+  <meta property="og:image:secure_url" content="https://luisflmaximo.github.io/assets/images/banner.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="2848">
+  <meta property="og:image:height" content="1504">
   <meta property="og:image:alt" content="Portfolio of Luís Máximo">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@luisflmaximo">
+  <meta name="twitter:creator" content="@luisflmaximo">
   <meta name="twitter:title" content="Luís Máximo — Portfolio">
   <meta name="twitter:description" content="Management student at ISCTE Business School. Discover my projects, curriculum and articles.">
   <meta name="twitter:image" content="https://luisflmaximo.github.io/assets/images/banner.png">
   <meta name="theme-color" content="#F0EDE5">
+  <link rel="manifest" href="/site.webmanifest">
   <link rel="icon" href="../assets/images/icon.png" type="image/png">
+  <link rel="icon" href="../assets/images/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="../assets/images/apple-touch-icon.png">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Person",
+          "@id": "https://luisflmaximo.github.io/#person",
+          "name": "Luís Máximo",
+          "url": "https://luisflmaximo.github.io/en/",
+          "image": "https://luisflmaximo.github.io/assets/images/profile.jpg",
+          "jobTitle": "Management Student",
+          "email": "mailto:luisflmaximo8@gmail.com",
+          "telephone": "+351933869786",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Loures",
+            "addressRegion": "Lisbon",
+            "addressCountry": "PT"
+          },
+          "affiliation": {
+            "@type": "CollegeOrUniversity",
+            "name": "ISCTE Business School",
+            "url": "https://ibs.iscte-iul.pt/"
+          },
+          "sameAs": [
+            "https://www.linkedin.com/in/lu%C3%ADs-m%C3%A1ximo/",
+            "https://www.instagram.com/luisflmaximo/",
+            "https://x.com/luisflmaximo",
+            "https://www.facebook.com/luisflmaximo"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://luisflmaximo.github.io/#website",
+          "url": "https://luisflmaximo.github.io/",
+          "name": "Luís Máximo",
+          "inLanguage": [
+            "pt-PT",
+            "en-US"
+          ],
+          "publisher": {
+            "@id": "https://luisflmaximo.github.io/#person"
+          }
+        },
+        {
+          "@type": "WebPage",
+          "@id": "https://luisflmaximo.github.io/en/#webpage",
+          "url": "https://luisflmaximo.github.io/en/",
+          "name": "Luís Máximo — Portfolio",
+          "description": "Management student at ISCTE Business School. Discover my projects, curriculum and articles.",
+          "inLanguage": "en-US",
+          "isPartOf": {
+            "@id": "https://luisflmaximo.github.io/#website"
+          },
+          "about": {
+            "@id": "https://luisflmaximo.github.io/#person"
+          },
+          "primaryImageOfPage": {
+            "@type": "ImageObject",
+            "url": "https://luisflmaximo.github.io/assets/images/banner.png",
+            "width": 2848,
+            "height": 1504
+          }
+        }
+      ]
+    }
+  </script>
+  <script>
+    (function () {
+      function isLinkedinNavigatorError(value) {
+        var message = typeof value === 'string'
+          ? value
+          : (value && typeof value.message === 'string' ? value.message : '');
+
+        return message.indexOf('getInstalledRelatedApps') !== -1 &&
+          message.indexOf('top-level browsing contexts') !== -1;
+      }
+
+      window.addEventListener('unhandledrejection', function (event) {
+        if (isLinkedinNavigatorError(event.reason)) {
+          event.preventDefault();
+        }
+      });
+
+      window.addEventListener('error', function (event) {
+        if (isLinkedinNavigatorError(event.error || event.message)) {
+          event.preventDefault();
+          return false;
+        }
+      }, true);
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
+<a class="skip-link" href="#main-content">Skip to content</a>
 
 <!-- ════════════════════ NAVIGATION ════════════════════ -->
 <nav class="nav" id="nav">
@@ -57,7 +162,7 @@
 </nav>
 
 <!-- ════════════════════ MAIN ════════════════════ -->
-<main>
+<main id="main-content" tabindex="-1">
 
   <!-- ── HERO ── -->
   <section class="hero">
@@ -72,6 +177,8 @@
             class="hero__photo"
             id="profilePhoto"
             draggable="false"
+            width="2000"
+            height="1996"
           >
         </div>
 
@@ -136,7 +243,7 @@
   <!-- ── LINKEDIN SECTION ── -->
   <section class="section section--bordered">
     <div class="container">
-      <div class="linkedin-section reveal">
+      <div class="linkedin-section reveal" data-linkedin-section>
         <div class="linkedin-section__header">
           <div class="linkedin-section__title-block">
             <p class="label linkedin-section__label">Publications</p>
@@ -149,7 +256,7 @@
         </div>
 
         <div class="linkedin-layout">
-          <article class="linkedin-post-card">
+          <article class="linkedin-post-card linkedin-post-card--loaded">
             <div class="linkedin-post-card__meta">
               <p class="label">Featured post</p>
               <a href="https://www.linkedin.com/feed/update/urn:li:ugcPost:7444481713419767808/" target="_blank" rel="noopener noreferrer" class="linkedin-post-card__link">Open on LinkedIn</a>
@@ -161,10 +268,10 @@
               width="504"
               frameborder="0"
               allowfullscreen=""
-              title="Publicação incorporada"></iframe>
+              title="Embedded LinkedIn post"></iframe>
           </article>
 
-          <aside class="linkedin-profile-panel">
+          <aside class="linkedin-profile-panel" data-linkedin-profile-panel>
             <div class="badge-base LI-profile-badge linkedin-profile-embed linkedin-profile-embed--desktop"
               data-locale="en_US"
               data-size="large"
@@ -182,7 +289,7 @@
               data-type="HORIZONTAL"
               data-vanity="luís-máximo"
               data-version="v1">
-              <a class="badge-base__link LI-simple-link" href="https://www.linkedin.com/in/lu%C3%ADs-m%C3%A1ximo?trk=profile-badge" aria-label="LinkedIn profile"></a>
+                <a class="badge-base__link LI-simple-link" href="https://www.linkedin.com/in/lu%C3%ADs-m%C3%A1ximo?trk=profile-badge" aria-label="LinkedIn profile"></a>
             </div>
 
             <div class="linkedin-cta">
@@ -235,6 +342,5 @@
 </footer>
 
 <script src="../assets/js/main.js"></script>
-<script src="https://platform.linkedin.com/badges/js/profile.js" async defer></script>
 </body>
 </html>
