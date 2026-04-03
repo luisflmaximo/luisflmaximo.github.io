@@ -307,14 +307,16 @@ select:focus-visible,
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 4rem;
-  align-items: start;
+  align-items: stretch;
 }
 .hero__photo-wrap {
   position: relative;
+  height: 100%;
 }
 .hero__photo {
   width: 100%;
-  aspect-ratio: 3/4;
+  height: 100%;
+  display: block;
   object-fit: cover;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
@@ -1190,7 +1192,8 @@ select:focus-visible,
     grid-template-columns: 1fr;
     gap: 2.5rem;
   }
-  .hero__photo-wrap { max-width: 280px; margin: 0 auto; }
+  .hero__photo-wrap { max-width: 280px; margin: 0 auto; height: auto; }
+  .hero__photo { height: auto; }
   .hero__info-grid { grid-template-columns: 1fr 1fr; }
 
   /* CV */
