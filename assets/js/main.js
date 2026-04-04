@@ -149,6 +149,9 @@
   const LINKEDIN_BADGE_SCRIPT = 'https://platform.linkedin.com/badges/js/profile.js';
 
   if (linkedinSection || linkedinFrames.length) {
+    const isTopLevelContext = (() => {
+      try { return window.top === window.self; } catch (_) { return false; }
+    })();
 
     /* Resize iframes to match viewport */
     const setLinkedinFrameHeight = () => {
@@ -233,6 +236,11 @@
     const loadLinkedinEmbeds = () => {
       if (linkedinEmbedsLoaded) return;
       linkedinEmbedsLoaded = true;
+
+      if (!isTopLevelContext) {
+        activateLinkedinFallback();
+        return;
+      }
 
       setLinkedinFrameHeight();
       if (linkedinProfilePanels.length) keepOnlyActiveLinkedinProfileEmbed();
