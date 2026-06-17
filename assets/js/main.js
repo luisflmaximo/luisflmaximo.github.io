@@ -56,7 +56,7 @@
       if (count === 7) {
         count = 0;
         clearTimeout(timer);
-        sessionStorage.setItem('secretUnlocked', '1');
+        try { sessionStorage.setItem('secretUnlocked', '1'); } catch (_) {}
         showSecretTab();
         window.location.href = new URL('../secret/', window.location.href).toString();
         return;
@@ -75,8 +75,11 @@
     if (!document.referrer) return false;
     try { return new URL(document.referrer).origin === window.location.origin; } catch (_) { return false; }
   })();
-  if (!hasInternalReferrer) sessionStorage.removeItem('secretUnlocked');
-  if (sessionStorage.getItem('secretUnlocked') === '1') showSecretTab();
+
+  try {
+    if (!hasInternalReferrer) sessionStorage.removeItem('secretUnlocked');
+    if (sessionStorage.getItem('secretUnlocked') === '1') showSecretTab();
+  } catch (_) {}
 
   /* ── Reveal on scroll ── */
   const reveals = document.querySelectorAll('.reveal');
@@ -262,7 +265,12 @@
     } else {
       window.addEventListener('load', loadLinkedinEmbeds, { once: true });
     }
-
   } // end LinkedIn block
+
+  /* ── Auto-update copyright year ── */
+  const currentYear = new Date().getFullYear();
+  document.querySelectorAll('.footer__copy').forEach((el) => {
+    el.innerHTML = el.innerHTML.replace(/\b20\d{2}\b/g, currentYear);
+  });
 
 })();

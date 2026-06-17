@@ -26,7 +26,9 @@
     return;
   }
 
-  const mobileQuery = window.matchMedia('(max-width: 640px)');
+  const mobileQuery = (window.matchMedia && typeof window.matchMedia === 'function')
+    ? window.matchMedia('(max-width: 640px)')
+    : { matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} };
   const STOP_WORDS = new Set([
     'a', 'ao', 'aos', 'as', 'com', 'como', 'da', 'das', 'de', 'do', 'dos',
     'e', 'em', 'eu', 'la', 'mais', 'me', 'mostra', 'na', 'nas', 'no', 'nos', 'o', 'os',

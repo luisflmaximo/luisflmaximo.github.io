@@ -11,22 +11,24 @@ portfolio/
 â”œâ”€â”€ index.html                  â† Redireciona automaticamente PT/EN
 â”œâ”€â”€ 404.html                    â† PÃ¡gina de erro personalizada
 â”œâ”€â”€ assets/
-â”‚   â”œâ”€â”€ css/style.css           â† Folha de estilos principal
-â”‚   â”œâ”€â”€ js/main.js              â† JavaScript partilhado
+â”‚   â”œâ”€â”€ css/style.css           â†  Folha de estilos principal
+â”‚   â”œâ”€â”€ js/main.js              â†  JavaScript partilhado
 â”‚   â””â”€â”€ images/
-â”‚       â””â”€â”€ profile.jpg         â† Fotografia de perfil
+â”‚       â””â”€â”€ profile.jpg         â†  Fotografia de perfil
 â”œâ”€â”€ docs/
-â”‚   â””â”€â”€ CV_Luis_Maximo.pdf      â† CV para download
-â”œâ”€â”€ pt/                         â† VersÃ£o portuguesa
-â”‚   â”œâ”€â”€ index.html              â† PÃ¡gina inicial
-â”‚   â”œâ”€â”€ projetos/index.html     â† PÃ¡gina de projetos
-â”‚   â””â”€â”€ curriculo/index.html    â† PÃ¡gina de currÃ­culo
-â”œâ”€â”€ en/                         â† English version
-â”‚   â”œâ”€â”€ index.html              â† Home page
-â”‚   â”œâ”€â”€ projects/index.html     â† Projects page
-â”‚   â””â”€â”€ curriculum/index.html   â† Curriculum page
+â”‚   â””â”€â”€ CV_Luis_Maximo.pdf      â†  CV para download
+â”œâ”€â”€ pt/                         â†  VersÃ£o portuguesa
+â”‚   â”œâ”€â”€ index.html              â†  PÃ¡gina inicial
+â”‚   â”œâ”€â”€ projetos/index.html     â†  PÃ¡gina de projetos
+â”‚   â””â”€â”€ curriculo/index.html    â†  PÃ¡gina de currÃ­culo
+â”œâ”€â”€ en/                         â†  English version
+â”‚   â”œâ”€â”€ index.html              â†  Home page
+â”‚   â”œâ”€â”€ projects/index.html     â†  Projects page
+â”‚   â””â”€â”€ curriculum/index.html   â†  Curriculum page
 â””â”€â”€ secret/
-    â””â”€â”€ index.html              â† PÃ¡gina secreta (5 toques na foto)
+    â”œâ”€â”€ index.html              â†  Launcher leve do estúdio
+    â””â”€â”€ estudio/
+        â””â”€â”€ index.html          â†  Estúdio de ficheiros em lote
 ```
 
 ---
@@ -62,7 +64,7 @@ https://luisflmaximo.github.io/portefolio
 
 ---
 
-## âœï¸ Como atualizar conteÃºdo
+## âœ ï¸  Como atualizar conteÃºdo
 
 ### Adicionar um trabalho acadÃ©mico (PDF)
 1. Coloca o ficheiro PDF na pasta `/docs/`
@@ -79,11 +81,11 @@ https://luisflmaximo.github.io/portefolio
 5. Substitui o conteÃºdo do slot pelo cÃ³digo copiado
 6. Faz o mesmo no ficheiro `/en/projects/index.html`
 
-### Adicionar links na pÃ¡gina secreta
+### Estúdio de ficheiros
 1. Abre `/secret/index.html`
-2. Procura o bloco `EXEMPLO DE CARTÃƒO`
-3. Copia o exemplo, descomenta-o e preenche os dados
-4. Podes criar novas categorias duplicando um bloco `secret-category`
+2. Usa o botão **"Abrir estúdio"** para entrares em `/secret/estudio/`
+3. No estúdio podes carregar ficheiros, pastas ou links e processá-los em lote
+4. Os downloads de links externos dependem de serviços compatíveis e de URLs públicas
 
 ### Adicionar o LinkedIn do Politiza-te (quando disponÃ­vel)
 1. Abre `/pt/projetos/index.html` e `/en/projects/index.html`
@@ -93,12 +95,12 @@ https://luisflmaximo.github.io/portefolio
 
 ---
 
-## ðŸ” PÃ¡gina Secreta
+## ðŸ”  PÃ¡gina Secreta
 
 A pÃ¡gina secreta Ã© ativada clicando **5 vezes** na fotografia de perfil da pÃ¡gina inicial.
 - Funciona em mobile e PC
 - NÃ£o estÃ¡ indexada nos motores de busca (tem `noindex, nofollow`)
-- O URL Ã© `/secret/` â€” podes partilhar diretamente se quiseres
+- O URL Ã© `/secret/` â€” abre o launcher leve do estúdio, que leva a `/secret/estudio/`
 
 ---
 
@@ -107,4 +109,3 @@ A pÃ¡gina secreta Ã© ativada clicando **5 vezes** na fotografia de perfil da
 - âœ… iOS Safari (iPhone/iPad)
 - âœ… Android Chrome
 - âœ… Responsive em todos os tamanhos de ecrÃ£
-

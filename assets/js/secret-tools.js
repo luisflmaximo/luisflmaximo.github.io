@@ -5,7 +5,9 @@
   const LOCALE_STORAGE_KEY = 'secretPageLocale';
   const FALLBACK_FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f3ede2'/%3E%3Cpath d='M16 7a9 9 0 1 0 0 18a9 9 0 0 0 0-18Zm0 2a7 7 0 1 1 0 14a7 7 0 0 1 0-14Zm-1-1h2v2h-2zm0 14h2v2h-2zM8 15h2v2H8zm14 0h2v2h-2z' fill='%237b8c80'/%3E%3C/svg%3E";
   const SOURCE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:8px;height:8px"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>';
-  const finePointerQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+  const finePointerQuery = (window.matchMedia && typeof window.matchMedia === 'function')
+    ? window.matchMedia('(hover: hover) and (pointer: fine)')
+    : { matches: false };
   const LOCALE_COPY = {
     pt: {
       title: 'Ferramentas — Luís Máximo',

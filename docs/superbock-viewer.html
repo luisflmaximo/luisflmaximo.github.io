@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Mega Caixa Super Bock 100 Anos de Cerveja</title>
+  <link rel="icon" href="../assets/images/icon.png" type="image/png">
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="protected-viewer-page" oncontextmenu="return false">
+<div class="protected-viewer__print-message">Printing is disabled for this document.</div>
+
+<main class="protected-viewer" id="main-content" tabindex="-1">
+  <div class="container">
+    <div class="protected-viewer__toolbar" aria-label="Document controls">
+      <div class="protected-viewer__identity">
+        <div>
+          <p class="label" data-i18n="label">Projeto acad&eacute;mico</p>
+          <h1 class="protected-viewer__title" data-i18n="title">Mega Caixa Super Bock 100 Anos de Cerveja</h1>
+          <p class="protected-viewer__meta" data-i18n="meta">Plano de Marketing - finalizado em maio de 2026</p>
+        </div>
+      </div>
+      <div class="protected-viewer__actions">
+        <div class="protected-viewer__zoom" aria-label="Zoom controls">
+          <button class="protected-viewer__zoom-btn" type="button" data-zoom-action="out" aria-label="Zoom out">-</button>
+          <label class="protected-viewer__zoom-slider">
+            <span class="protected-viewer__zoom-value" id="zoomValue">100%</span>
+            <input id="zoomRange" type="range" min="70" max="180" step="10" value="100" aria-label="Zoom">
+          </label>
+          <button class="protected-viewer__zoom-btn" type="button" data-zoom-action="in" aria-label="Zoom in">+</button>
+          <button class="protected-viewer__zoom-fit" type="button" data-zoom-action="fit" data-i18n="fit">Ajustar</button>
+        </div>
+        <a class="btn btn--ghost btn--sm protected-viewer__back" href="../pt/projetos/" data-i18n="back">Voltar</a>
+      </div>
+    </div>
+
+    <p class="protected-viewer__notice" data-i18n="notice">
+      Visualiza&ccedil;&atilde;o protegida: o documento &eacute; apresentado como imagens para impedir a c&oacute;pia do texto original. As fun&ccedil;&otilde;es de impress&atilde;o, grava&ccedil;&atilde;o e menu de contexto est&atilde;o bloqueadas nesta p&aacute;gina.
+    </p>
+
+    <div class="protected-viewer__stage" id="viewerStage">
+      <div class="protected-viewer__pages" id="protectedPages" aria-label="Mega Caixa Super Bock 100 Anos de Cerveja"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  (function () {
+    var pageCount = 71;
+    var params = new URLSearchParams(window.location.search);
+    var lang = params.get('lang') === 'en' ? 'en' : 'pt';
+    var copy = {
+      pt: {
+        label: 'Projeto acad\u00e9mico',
+        title: 'Mega Caixa Super Bock 100 Anos de Cerveja',
+        meta: 'Plano de Marketing - finalizado em maio de 2026',
+        back: 'Voltar',
+        fit: 'Ajustar',
+        notice: 'Visualiza\u00e7\u00e3o protegida: o documento \u00e9 apresentado como imagens para impedir a c\u00f3pia do texto original. As fun\u00e7\u00f5es de impress\u00e3o, grava\u00e7\u00e3o e menu de contexto est\u00e3o bloqueadas nesta p\u00e1gina.',
+        print: 'A impress\u00e3o est\u00e1 desativada para este documento.',
+        backHref: '../pt/projetos/'
+      },
+      en: {
+        label: 'Academic project',
+        title: 'Super Bock 100 Years of Beer Mega Box',
+        meta: 'Marketing Plan - finalized in May 2026',
+        back: 'Back',
+        fit: 'Fit',
+        notice: 'Protected viewing: the document is displayed as images to prevent copying the original text. Print, save and context-menu actions are blocked on this page.',
+        print: 'Printing is disabled for this document.',
+        backHref: '../en/projects/'
+      }
+    };
+
+    document.documentElement.lang = lang;
+    document.title = copy[lang].title;
+    document.querySelectorAll('[data-i18n]').forEach(function (node) {
+      var key = node.getAttribute('data-i18n');
+      node.textContent = copy[lang][key];
+      if (key === 'back') {
+        node.href = copy[lang].backHref;
+      }
+    });
+    document.querySelector('.protected-viewer__print-message').textContent = copy[lang].print;
+
+    var pages = document.getElementById('protectedPages');
+    for (var i = 1; i <= pageCount; i += 1) {
+      var figure = document.createElement('figure');
+      var img = document.createElement('img');
+      var pageNumber = String(i).padStart(3, '0');
+      figure.className = 'protected-viewer__page';
+      img.src = 'superbock-pages/page-' + pageNumber + '.webp';
+      img.alt = '';
+      img.loading = i <= 2 ? 'eager' : 'lazy';
+      img.decoding = 'async';
+      img.draggable = false;
+      figure.appendChild(img);
+      pages.appendChild(figure);
+    }
+
+    var zoomRange = document.getElementById('zoomRange');
+    var zoomValue = document.getElementById('zoomValue');
+    var viewerStage = document.getElementById('viewerStage');
+    var zoomMin = Number(zoomRange.min);
+    var zoomMax = Number(zoomRange.max);
+    var zoomStep = Number(zoomRange.step);
+
+    function clampZoom(value) {
+      return Math.max(zoomMin, Math.min(zoomMax, value));
+    }
+
+    function getBasePageWidth() {
+      var viewportPadding = window.matchMedia('(max-width: 480px)').matches ? 24 : window.matchMedia('(max-width: 768px)').matches ? 40 : 64;
+      return Math.min(940, Math.max(260, window.innerWidth - viewportPadding));
+    }
+
+    function setZoom(value) {
+      var nextZoom = clampZoom(Number(value));
+      zoomRange.value = String(nextZoom);
+      zoomValue.textContent = nextZoom + '%';
+      pages.style.width = Math.round(getBasePageWidth() * (nextZoom / 100)) + 'px';
+      requestAnimationFrame(function () {
+        viewerStage.classList.toggle('protected-viewer__stage--overflowing', viewerStage.scrollWidth > viewerStage.clientWidth);
+        viewerStage.scrollLeft = 0;
+      });
+    }
+
+    zoomRange.addEventListener('input', function (event) {
+      setZoom(event.target.value);
+    });
+
+    document.querySelectorAll('[data-zoom-action]').forEach(function (control) {
+      control.addEventListener('click', function () {
+        var action = control.getAttribute('data-zoom-action');
+        if (action === 'fit') {
+          setZoom(100);
+        } else if (action === 'in') {
+          setZoom(Number(zoomRange.value) + zoomStep);
+        } else if (action === 'out') {
+          setZoom(Number(zoomRange.value) - zoomStep);
+        }
+      });
+    });
+
+    setZoom(100);
+    window.addEventListener('resize', function () {
+      setZoom(zoomRange.value);
+    });
+
+    function blockEvent(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    }
+
+    ['copy', 'cut', 'contextmenu', 'dragstart'].forEach(function (eventName) {
+      document.addEventListener(eventName, blockEvent);
+    });
+
+    document.addEventListener('keydown', function (event) {
+      var key = event.key.toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && ['p', 's', 'a', 'c'].includes(key)) {
+        blockEvent(event);
+      }
+    });
+
+    window.addEventListener('beforeprint', function (event) {
+      blockEvent(event);
+    });
+  }());
+</script>
+</body>
+</html>

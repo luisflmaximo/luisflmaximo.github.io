@@ -209,6 +209,59 @@
   display: none !important;
 }
 
+/* ── Launcher page ──────────────────────────────────────────────── */
+.launcher-header {
+  padding-top: calc(var(--nav-h) + 2rem);
+}
+
+.launcher-shell {
+  max-width: 760px;
+}
+
+.launcher-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: clamp(1.4rem, 3vw, 2rem);
+  text-align: left;
+}
+
+.launcher-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 1.2rem 0 1.35rem;
+}
+
+.launcher-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.launcher-actions {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.launcher-actions .btn {
+  justify-content: center;
+}
+
+.launcher-note {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
 /* ── Card ────────────────────────────────────────────────────────── */
 .card {
   display: flex;
@@ -1062,4 +1115,13 @@
   .secret-ai__submit {
     width: 100%;
   }
+}
+
+/* Hide Studio FAB and Back to Top when AI Chat is Open */
+.secret-ai--open ~ .studio-fab,
+.secret-ai--open ~ .btt-btn {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(10px) !important;
+  transition: opacity 0.22s ease, transform 0.22s ease !important;
 }
