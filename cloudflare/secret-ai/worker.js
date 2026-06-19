@@ -1,10 +1,10 @@
-const MAX_BODY_BYTES = 64 * 1024;
+const MAX_BODY_BYTES = 1.5 * 1024 * 1024; // 1.5MB to support attached base64 images
 const MAX_QUERY_LENGTH = 500;
 const MAX_HISTORY_ITEMS = 6;
 const MAX_CANDIDATES = 30;
 const MAX_BADGES = 5;
 const MAX_ANSWER_LENGTH = 500;
-const MAX_REASON_LENGTH = 180;
+const MAX_REASON_LENGTH = 320; // Increased to prevent cut off reasoning sentences
 const DEFAULT_MODEL = 'gemini-3.1-flash-lite-preview';
 
 export default {
@@ -201,6 +201,19 @@ function validateCandidates(candidates) {
   });
 }
 
+function validateImage(image) {
+  if (!image) return null;
+  if (typeof image !== 'object') {
+    throw createHttpError('Invalid image parameter.', 400);
+  }
+  const mimeType = validateShortText(image.mimeType, 'image.mimeType', 80, true);
+  const data = String(image.data || '').trim();
+  if (!data) {
+    throw createHttpError('Missing field: image.data.', 400);
+  }
+  return { mimeType, data };
+}
+
 function validatePayload(payload) {
   if (!payload || typeof payload !== 'object') {
     throw createHttpError('Invalid JSON payload.', 400);
@@ -212,6 +225,7 @@ function validatePayload(payload) {
     activeCategory: validateOptionalScope(payload.activeCategory, 'activeCategory'),
     activeSection: validateOptionalScope(payload.activeSection, 'activeSection'),
     candidates: validateCandidates(payload.candidates),
+    image: validateImage(payload.image),
   };
 }
 
@@ -274,6 +288,16 @@ async function requestGemini(data, env) {
   const model = String(env.GEMINI_MODEL || DEFAULT_MODEL).trim() || DEFAULT_MODEL;
   const prompt = buildPrompt(data);
 
+  const parts = [{ text: prompt }];
+  if (data.image) {
+    parts.push({
+      inlineData: {
+        mimeType: data.image.mimeType,
+        data: data.image.data,
+      }
+    });
+  }
+
   const response = await fetch(
     'https://generativelanguage.googleapis.com/v1beta/models/' +
       encodeURIComponent(model) +
@@ -288,7 +312,7 @@ async function requestGemini(data, env) {
         contents: [
           {
             role: 'user',
-            parts: [{ text: prompt }],
+            parts: parts,
           },
         ],
         generationConfig: {
@@ -367,16 +391,7 @@ function sanitizeModelResponse(parsed, candidates) {
         .slice(0, 6)
     : [];
 
-  candidates.forEach((candidate) => {
-    if (recommendations.length >= 6) return;
-    if (!candidate || !candidate.id || seen.has(candidate.id)) return;
-
-    seen.add(candidate.id);
-    recommendations.push({
-      id: candidate.id,
-      reason: clampText(normalizeEuropeanPortuguese(candidate.desc || ''), MAX_REASON_LENGTH) || 'Boa opção dentro do catálogo para este pedido.',
-    });
-  });
+  // REMOVED FORCE-PADDING LOOP: only return recommendations explicitly made by Gemini!
 
   const answer = clampText(normalizeEuropeanPortuguese(parsed && parsed.answer || ''), MAX_ANSWER_LENGTH) || (
     recommendations.length

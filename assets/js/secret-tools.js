@@ -773,8 +773,8 @@
     revealSyncTimer = window.setTimeout(syncVisibleCardReveals, 80);
   }
 
-  function setupCardInteractions() {
-    state.cardLinks.forEach((card) => {
+  function setupCardInteractions(cards) {
+    cards.forEach((card) => {
       card.tabIndex = 0;
       card.setAttribute('role', 'link');
 
@@ -857,12 +857,52 @@
     syncSubFilterWidth();
   }
 
-  function renderContent(categories) {
-    refs.content.innerHTML = categories.map(categoryMarkup).join('');
-    state.allCards = Array.from(refs.content.querySelectorAll('.card'));
-    state.cardLinks = Array.from(refs.content.querySelectorAll('.card-link'));
-    setupCardInteractions();
-    scheduleRevealSync();
+  function appendCardsIncremental(cards) {
+    const newCardEls = [];
+    cards.forEach((card) => {
+      let catBlock = refs.content.querySelector(`.cat-block[data-cat="${card.categoryId}"]`);
+      if (!catBlock) {
+        const category = state.categoryMap[card.categoryId];
+        if (!category) return;
+        
+        const temp = document.createElement('div');
+        const count = state.filteredCategoryCounts[card.categoryId] || 0;
+        temp.innerHTML = '<div class="cat-block" data-cat="' + escapeHtml(category.id) + '">' +
+          '<div class="projects-section__header"><h2 class="cat-title"><span class="cat-emoji">' + escapeHtml(category.emoji) +
+          '</span> ' + escapeHtml(category.label) + '</h2><span class="cat-count">' + count + ' itens</span></div>' +
+          '</div>';
+        catBlock = temp.firstElementChild;
+        refs.content.appendChild(catBlock);
+      }
+      
+      let secBlock = catBlock.querySelector(`.sec-block[data-sec="${card.sectionId}"]`);
+      if (!secBlock) {
+        const temp = document.createElement('div');
+        temp.innerHTML = '<div class="sec-block" data-sec="' + escapeHtml(card.sectionId) + '">' +
+          '<p class="sec-title">' + escapeHtml(card.sectionLabel) + '</p>' +
+          '<div class="cards-grid"></div>' +
+          '</div>';
+        secBlock = temp.firstElementChild;
+        catBlock.appendChild(secBlock);
+      }
+      
+      const grid = secBlock.querySelector('.cards-grid');
+      const temp = document.createElement('div');
+      temp.innerHTML = cardMarkup(card, card.categoryId);
+      const cardEl = temp.firstElementChild;
+      grid.appendChild(cardEl);
+      newCardEls.push(cardEl);
+      
+      state.allCards.push(cardEl);
+      state.cardLinks.push(cardEl);
+    });
+    
+    setupCardInteractions(newCardEls);
+    
+    newCardEls.forEach((card) => {
+      buildReveal(card);
+    });
+    
     syncSubFilterWidth();
   }
 
@@ -904,11 +944,14 @@
 
   function renderFilteredResults() {
     const renderedCount = Math.min(state.renderLimit, state.filteredCards.length);
-    const visibleCards = state.filteredCards.slice(0, renderedCount);
-    const renderedCategories = buildRenderedCategories(visibleCards, state.filteredCategoryCounts);
+    const startIndex = state.allCards.length;
+    const cardsToAppend = state.filteredCards.slice(startIndex, renderedCount);
 
     closeOpenCards();
-    renderContent(renderedCategories);
+    if (cardsToAppend.length > 0) {
+      appendCardsIncremental(cardsToAppend);
+    }
+    
     updateCount(state.filteredCards.length);
     updateSearchPlaceholder(state.scopedCount);
     updateResultsMeta(state.filteredCards.length, renderedCount);
@@ -927,6 +970,9 @@
 
     if (resetLimit) {
       resetRenderLimit();
+      refs.content.innerHTML = '';
+      state.allCards = [];
+      state.cardLinks = [];
     }
 
     renderFilteredResults();

@@ -29,7 +29,7 @@
   <meta name="twitter:title" content="Página não encontrada — Luís Máximo">
   <meta name="twitter:description" content="A página que procuras não existe ou foi movida.">
   <meta name="twitter:image" content="https://luisflmaximo.github.io/portefolio/assets/images/banner-social.jpg">
-  <link rel="manifest" href="/site.webmanifest">
+  <link rel="manifest" href="site.webmanifest">
   <link rel="icon" href="assets/images/icon.png" type="image/png">
   <link rel="icon" href="assets/images/icon-192.png" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
@@ -128,7 +128,8 @@
         return;
       }
 
-      link.href = isEnglish ? '/en/' : '/pt/';
+      var basePath = (window.location.pathname || '').toLowerCase().startsWith('/portefolio') ? '/portefolio' : '';
+      link.href = isEnglish ? (basePath + '/en/') : (basePath + '/pt/');
       link.textContent = isEnglish ? link.getAttribute('data-en-label') : link.getAttribute('data-pt-label');
 
       var currentYear = new Date().getFullYear();

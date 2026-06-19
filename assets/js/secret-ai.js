@@ -20,9 +20,15 @@
     input: document.getElementById('secretAiInput'),
     hint: document.getElementById('secretAiHint'),
     submit: document.getElementById('secretAiSubmit'),
+    chips: document.getElementById('secretAiChips'),
+    attachBtn: document.getElementById('secretAiAttachBtn'),
+    fileInput: document.getElementById('secretAiFileInput'),
+    imagePreview: document.getElementById('secretAiImagePreview'),
+    imageThumbnail: document.getElementById('secretAiImageThumbnail'),
+    imageRemoveBtn: document.getElementById('secretAiImageRemoveBtn'),
   };
 
-  if (!refs.root || !refs.panel || !refs.backdrop || !refs.fab || !refs.close || !refs.messages || !refs.form || !refs.input || !refs.submit || !refs.hint) {
+  if (!refs.root || !refs.panel || !refs.backdrop || !refs.fab || !refs.close || !refs.messages || !refs.form || !refs.input || !refs.submit || !refs.hint || !refs.chips || !refs.attachBtn || !refs.fileInput || !refs.imagePreview || !refs.imageThumbnail || !refs.imageRemoveBtn) {
     return;
   }
 
@@ -64,6 +70,7 @@
     toolsApi: null,
     typingNode: null,
     closeTimer: null,
+    attachedImage: null, // Stores { mimeType, data (base64) }
   };
 
   function normalizeText(value) {
@@ -611,7 +618,7 @@
   }
 
   function buildRequestPayload(query) {
-    return {
+    const payload = {
       query: clampText(query, 500),
       history: state.history.slice(-6).map((entry) => ({
         role: entry.role,
@@ -627,6 +634,12 @@
       } : null,
       candidates: pickCandidates(query),
     };
+
+    if (state.attachedImage) {
+      payload.image = state.attachedImage;
+    }
+
+    return payload;
   }
 
   function normalizeRecommendations(recommendations) {
@@ -755,13 +768,36 @@
   }
 
   async function handleSubmit(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
 
     const query = refs.input.value.trim();
-    if (!query || state.busy) return;
+    if ((!query && !state.attachedImage) || state.busy) return;
 
-    appendTextMessage('user', query);
+    if (state.attachedImage) {
+      const message = createMessageShell('user');
+      const img = document.createElement('img');
+      img.src = 'data:' + state.attachedImage.mimeType + ';base64,' + state.attachedImage.data;
+      img.style.maxHeight = '120px';
+      img.style.borderRadius = '6px';
+      img.style.display = 'block';
+      img.style.marginBottom = '6px';
+      message.bubble.appendChild(img);
+      if (query) {
+        const p = document.createElement('p');
+        p.textContent = query;
+        message.bubble.appendChild(p);
+      }
+      scrollMessagesToBottom();
+    } else {
+      appendTextMessage('user', query);
+    }
+
+    const savedQuery = query;
     refs.input.value = '';
+    state.attachedImage = null;
+    refs.imagePreview.hidden = true;
+    refs.imageThumbnail.src = '';
+    refs.fileInput.value = '';
     autoResizeInput();
 
     if (!config.endpoint) {
@@ -778,10 +814,10 @@
     showTypingMessage();
 
     try {
-      const result = await requestRecommendations(query);
+      const result = await requestRecommendations(savedQuery || 'Analisa esta imagem em relação aos sites.');
       removeTypingMessage();
       appendAssistantRecommendations(result.answer, result.recommendations);
-      pushHistory('user', query);
+      pushHistory('user', savedQuery || 'Imagem enviada');
       pushHistory('assistant', result.answer);
     } catch (error) {
       removeTypingMessage();
@@ -799,6 +835,22 @@
     appendTextMessage('assistant',
       'Diz-me o que precisas e eu sugiro os sites mais adequados desta aba.',
       { bubbleClassName: 'secret-ai__bubble--muted' });
+  }
+
+  function handleImageFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const base64Data = e.target.result.split(',')[1];
+      state.attachedImage = {
+        mimeType: file.type,
+        data: base64Data,
+      };
+      refs.imageThumbnail.src = e.target.result;
+      refs.imagePreview.hidden = false;
+    };
+    reader.readAsDataURL(file);
   }
 
   function bindEvents() {
@@ -822,6 +874,44 @@
       if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
         submitPromptForm();
+      }
+    });
+
+    refs.chips.addEventListener('click', (event) => {
+      const chip = event.target.closest('.secret-ai__chip');
+      if (!chip) return;
+      const prompt = chip.dataset.prompt;
+      if (prompt) {
+        refs.input.value = prompt;
+        autoResizeInput();
+        refs.input.focus();
+      }
+    });
+
+    refs.attachBtn.addEventListener('click', () => {
+      refs.fileInput.click();
+    });
+
+    refs.fileInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      handleImageFile(file);
+    });
+
+    refs.imageRemoveBtn.addEventListener('click', () => {
+      state.attachedImage = null;
+      refs.imagePreview.hidden = true;
+      refs.imageThumbnail.src = '';
+      refs.fileInput.value = '';
+    });
+
+    refs.input.addEventListener('paste', (event) => {
+      const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          handleImageFile(file);
+          break;
+        }
       }
     });
 
