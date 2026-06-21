@@ -1,6 +1,10 @@
 (function () {
   'use strict';
 
+  try {
+    sessionStorage.setItem('secretUnlocked', '1');
+  } catch (_) {}
+
   const DATA_URL = './tools-data.json';
   const LOCALE_STORAGE_KEY = 'secretPageLocale';
   const FALLBACK_FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f3ede2'/%3E%3Cpath d='M16 7a9 9 0 1 0 0 18a9 9 0 0 0 0-18Zm0 2a7 7 0 1 1 0 14a7 7 0 0 1 0-14Zm-1-1h2v2h-2zm0 14h2v2h-2zM8 15h2v2H8zm14 0h2v2h-2z' fill='%237b8c80'/%3E%3C/svg%3E";
@@ -530,7 +534,8 @@
     const source = sourceMarkup(card.source);
     const cardClass = categoryId === 'jogos' ? 'card card-link card-game' : 'card card-link';
 
-    return '<article class="' + cardClass + '" data-href="' + escapeHtml(card.href) + '" data-sec="' + escapeHtml(card.sectionId) +
+    return '<div class="card-wrapper">' +
+      '<article class="' + cardClass + '" data-href="' + escapeHtml(card.href) + '" data-sec="' + escapeHtml(card.sectionId) +
       '" data-search="' + escapeHtml(card.search) + '" data-ai-id="' + escapeHtml(card.aiId) + '">' +
       '<div class="card-head">' +
       faviconMarkup(card) +
@@ -541,7 +546,8 @@
       '<a href="' + escapeHtml(card.href) + '" target="_blank" rel="noopener" class="card-domain card-main-link">' + escapeHtml(card.domain) + '</a>' +
       '<div class="card-meta">' + badges + source + '</div>' +
       '</div>' +
-      '</article>';
+      '</article>' +
+      '</div>';
   }
 
   function sectionMarkup(section, categoryId) {
@@ -764,7 +770,27 @@
       card.style.removeProperty('--card-desc-collapsed-height');
       card.style.removeProperty('--card-desc-expanded-height');
 
+      const wrapper = card.parentElement;
+      if (wrapper && wrapper.classList.contains('card-wrapper')) {
+        wrapper.style.height = '';
+      }
+    });
+
+    state.cardLinks.forEach((card) => {
+      if (card.classList.contains('hidden')) return;
       buildReveal(card);
+    });
+
+    state.cardLinks.forEach((card) => {
+      if (card.classList.contains('hidden')) return;
+      const wrapper = card.parentElement;
+      if (wrapper && wrapper.classList.contains('card-wrapper')) {
+        if (window.innerWidth > 640) {
+          wrapper.style.height = card.offsetHeight + 'px';
+        } else {
+          wrapper.style.height = '';
+        }
+      }
     });
   }
 
@@ -889,8 +915,9 @@
       const grid = secBlock.querySelector('.cards-grid');
       const temp = document.createElement('div');
       temp.innerHTML = cardMarkup(card, card.categoryId);
-      const cardEl = temp.firstElementChild;
-      grid.appendChild(cardEl);
+      const wrapperEl = temp.firstElementChild;
+      const cardEl = wrapperEl.querySelector('.card');
+      grid.appendChild(wrapperEl);
       newCardEls.push(cardEl);
       
       state.allCards.push(cardEl);
@@ -901,6 +928,14 @@
     
     newCardEls.forEach((card) => {
       buildReveal(card);
+      const wrapper = card.parentElement;
+      if (wrapper && wrapper.classList.contains('card-wrapper')) {
+        if (window.innerWidth > 640) {
+          wrapper.style.height = card.offsetHeight + 'px';
+        } else {
+          wrapper.style.height = '';
+        }
+      }
     });
     
     syncSubFilterWidth();

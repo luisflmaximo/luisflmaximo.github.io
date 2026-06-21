@@ -802,6 +802,12 @@ select:focus-visible,
   --viewer-base-width: min(940px, calc(100vw - 4rem));
   --viewer-page-width: min(940px, calc(100vw - 4rem));
 }
+.protected-viewer-page .container {
+  max-width: 100%;
+  width: 100%;
+  padding-left: clamp(0.75rem, 2vw, 1.5rem);
+  padding-right: clamp(0.75rem, 2vw, 1.5rem);
+}
 .protected-viewer {
   padding-top: 1.5rem;
   padding-bottom: 3rem;
@@ -897,7 +903,9 @@ select:focus-visible,
   align-self: center;
 }
 .protected-viewer__notice {
-  max-width: 52rem;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
   margin-bottom: 1.5rem;
   padding: 0.85rem 1rem;
   border: 1px solid var(--border);
@@ -908,10 +916,16 @@ select:focus-visible,
   line-height: 1.55;
 }
 .protected-viewer__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   overflow-x: auto;
   overflow-y: visible;
   padding: 0 0 0.6rem;
   touch-action: pan-x pan-y pinch-zoom;
+}
+.protected-viewer__stage--overflowing {
+  align-items: flex-start;
 }
 .protected-viewer__pages {
   width: var(--viewer-page-width);
@@ -919,12 +933,7 @@ select:focus-visible,
   min-width: 260px;
   display: grid;
   gap: 1.25rem;
-  margin: 0 auto;
   transition: width var(--transition);
-}
-.protected-viewer__stage--overflowing .protected-viewer__pages {
-  margin-left: 0;
-  margin-right: 0;
 }
 .protected-viewer__page {
   overflow: hidden;

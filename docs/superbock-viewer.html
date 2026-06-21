@@ -27,7 +27,7 @@
           <button class="protected-viewer__zoom-btn" type="button" data-zoom-action="out" aria-label="Zoom out">-</button>
           <label class="protected-viewer__zoom-slider">
             <span class="protected-viewer__zoom-value" id="zoomValue">100%</span>
-            <input id="zoomRange" type="range" min="70" max="180" step="10" value="100" aria-label="Zoom">
+            <input id="zoomRange" type="range" min="25" max="150" step="1" value="100" aria-label="Zoom">
           </label>
           <button class="protected-viewer__zoom-btn" type="button" data-zoom-action="in" aria-label="Zoom in">+</button>
           <button class="protected-viewer__zoom-fit" type="button" data-zoom-action="fit" data-i18n="fit">Ajustar</button>
@@ -129,6 +129,17 @@
       return Math.min(940, Math.max(260, window.innerWidth - viewportPadding));
     }
 
+    function getAdaptiveInitialZoom() {
+      var baseWidth = getBasePageWidth();
+      var estimatedHeight = baseWidth * 1.414;
+      var availableHeight = window.innerHeight - 160; // Descontar cabeçalho e avisos
+      if (estimatedHeight > availableHeight && availableHeight > 200) {
+        var calculatedZoom = Math.round((availableHeight / estimatedHeight) * 100);
+        return Math.max(Number(zoomRange.min), Math.min(100, calculatedZoom));
+      }
+      return 100;
+    }
+
     function setZoom(value) {
       var nextZoom = clampZoom(Number(value));
       zoomRange.value = String(nextZoom);
@@ -147,17 +158,18 @@
     document.querySelectorAll('[data-zoom-action]').forEach(function (control) {
       control.addEventListener('click', function () {
         var action = control.getAttribute('data-zoom-action');
+        var buttonStep = 10; // Incrementar/Decrementar 10% no clique dos botões
         if (action === 'fit') {
-          setZoom(100);
+          setZoom(getAdaptiveInitialZoom());
         } else if (action === 'in') {
-          setZoom(Number(zoomRange.value) + zoomStep);
+          setZoom(Number(zoomRange.value) + buttonStep);
         } else if (action === 'out') {
-          setZoom(Number(zoomRange.value) - zoomStep);
+          setZoom(Number(zoomRange.value) - buttonStep);
         }
       });
     });
 
-    setZoom(100);
+    setZoom(getAdaptiveInitialZoom());
     window.addEventListener('resize', function () {
       setZoom(zoomRange.value);
     });

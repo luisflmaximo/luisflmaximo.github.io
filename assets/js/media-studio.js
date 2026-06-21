@@ -1,6 +1,10 @@
 (function () {
   'use strict';
 
+  try {
+    sessionStorage.setItem('secretUnlocked', '1');
+  } catch (_) {}
+
   const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';
   const PDFJS_WORKER_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
   const FFMPEG_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
@@ -4659,7 +4663,104 @@
     }
   }
 
+  function initLanguage() {
+    const LOCALE_COPY = {
+      pt: {
+        burgerLabel: 'Abrir menu',
+        nav: {
+          logoHref: '../../pt/',
+          home: { label: 'Início', href: '../../pt/' },
+          projects: { label: 'Projetos', href: '../../pt/projetos/' },
+          curriculum: { label: 'Currículo', href: '../../pt/curriculo/' },
+          tools: { label: 'Ferramentas', href: '../' },
+        }
+      },
+      en: {
+        burgerLabel: 'Open menu',
+        nav: {
+          logoHref: '../../en/',
+          home: { label: 'Home', href: '../../en/' },
+          projects: { label: 'Projects', href: '../../en/projects/' },
+          curriculum: { label: 'Curriculum', href: '../../en/curriculum/' },
+          tools: { label: 'Tools', href: '../' },
+        }
+      }
+    };
+
+    const langPtBtn = document.getElementById('scLangPt');
+    const langEnBtn = document.getElementById('scLangEn');
+
+    function updateHeaderLanguage(lang) {
+      const copy = LOCALE_COPY[lang] || LOCALE_COPY.pt;
+      const logo = document.getElementById('scNavLogo');
+      const home = document.getElementById('scNavHome');
+      const projects = document.getElementById('scNavProjects');
+      const curriculum = document.getElementById('scNavCurriculum');
+      const tools = document.getElementById('scNavTools');
+      const burger = document.getElementById('navBurger');
+
+      if (logo) logo.href = copy.nav.logoHref;
+      if (home) {
+        home.textContent = copy.nav.home.label;
+        home.href = copy.nav.home.href;
+      }
+      if (projects) {
+        projects.textContent = copy.nav.projects.label;
+        projects.href = copy.nav.projects.href;
+      }
+      if (curriculum) {
+        curriculum.textContent = copy.nav.curriculum.label;
+        curriculum.href = copy.nav.curriculum.href;
+      }
+      if (tools) {
+        tools.textContent = copy.nav.tools.label;
+        tools.href = copy.nav.tools.href;
+      }
+      if (burger) burger.setAttribute('aria-label', copy.burgerLabel);
+    }
+
+    function updateLangButtons(lang) {
+      if (langPtBtn) {
+        langPtBtn.classList.toggle('nav__lang-btn--active', lang === 'pt');
+        langPtBtn.setAttribute('aria-pressed', lang === 'pt' ? 'true' : 'false');
+      }
+      if (langEnBtn) {
+        langEnBtn.classList.toggle('nav__lang-btn--active', lang === 'en');
+        langEnBtn.setAttribute('aria-pressed', lang === 'en' ? 'true' : 'false');
+      }
+      updateHeaderLanguage(lang);
+    }
+
+    let currentLang = 'pt';
+    try {
+      currentLang = localStorage.getItem('lang-pref') || localStorage.getItem('secretPageLocale') || 'pt';
+    } catch (_) {}
+
+    updateLangButtons(currentLang);
+
+    if (langPtBtn) {
+      langPtBtn.addEventListener('click', () => {
+        try {
+          localStorage.setItem('lang-pref', 'pt');
+          localStorage.setItem('secretPageLocale', 'pt');
+        } catch (_) {}
+        updateLangButtons('pt');
+      });
+    }
+
+    if (langEnBtn) {
+      langEnBtn.addEventListener('click', () => {
+        try {
+          localStorage.setItem('lang-pref', 'en');
+          localStorage.setItem('secretPageLocale', 'en');
+        } catch (_) {}
+        updateLangButtons('en');
+      });
+    }
+  }
+
   function init() {
+    initLanguage();
     bindEvents();
     setActiveTool(tools[0].id);
     renderResults();
