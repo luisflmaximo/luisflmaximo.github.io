@@ -836,7 +836,6 @@ select:focus-visible,
   font-weight: 500;
   color: var(--accent);
   line-height: 1.2;
-  max-width: 18em;
 }
 .protected-viewer__meta {
   font-size: 0.78rem;

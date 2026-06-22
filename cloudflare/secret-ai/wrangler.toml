@@ -1,9 +1,10 @@
-﻿name = "secret-ai"
+name = "secret-ai"
 main = "worker.js"
 compatibility_date = "2026-04-03"
 workers_dev = true
 
 [vars]
-GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
+GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_VISION_MODEL = "llama-3.2-11b-vision-preview"
 ALLOWED_ORIGINS = "https://luisflmaximo.github.io/portefolio"
 

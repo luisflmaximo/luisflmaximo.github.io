@@ -5,7 +5,8 @@ const MAX_CANDIDATES = 30;
 const MAX_BADGES = 5;
 const MAX_ANSWER_LENGTH = 500;
 const MAX_REASON_LENGTH = 320; // Increased to prevent cut off reasoning sentences
-const DEFAULT_MODEL = 'gemini-3.1-flash-lite-preview';
+const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_VISION_MODEL = 'llama-3.2-11b-vision-preview';
 
 export default {
   async fetch(request, env) {
@@ -46,7 +47,7 @@ export default {
     try {
       const payload = await request.json();
       const data = validatePayload(payload);
-      const result = await requestGemini(data, env);
+      const result = await requestGroq(data, env);
       return jsonResponse(result, 200, corsOrigin);
     } catch (error) {
       const status = error && typeof error.status === 'number' ? error.status : 500;
@@ -284,46 +285,56 @@ function buildPrompt(data) {
   ].join('\n');
 }
 
-async function requestGemini(data, env) {
-  const model = String(env.GEMINI_MODEL || DEFAULT_MODEL).trim() || DEFAULT_MODEL;
-  const prompt = buildPrompt(data);
-
-  const parts = [{ text: prompt }];
+async function requestGroq(data, env) {
+  let model;
   if (data.image) {
-    parts.push({
-      inlineData: {
-        mimeType: data.image.mimeType,
-        data: data.image.data,
-      }
-    });
+    model = String(env.GROQ_VISION_MODEL || DEFAULT_VISION_MODEL).trim() || DEFAULT_VISION_MODEL;
+  } else {
+    model = String(env.GROQ_MODEL || DEFAULT_MODEL).trim() || DEFAULT_MODEL;
   }
 
-  const response = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/' +
-      encodeURIComponent(model) +
-      ':generateContent?key=' +
-      encodeURIComponent(env.GEMINI_API_KEY),
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+  const prompt = buildPrompt(data);
+
+  let content;
+  if (data.image) {
+    content = [
+      {
+        type: 'text',
+        text: prompt,
       },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: parts,
-          },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          topP: 0.9,
-          maxOutputTokens: 700,
-          responseMimeType: 'application/json',
+      {
+        type: 'image_url',
+        image_url: {
+          url: 'data:' + data.image.mimeType + ';base64,' + data.image.data,
         },
-      }),
+      },
+    ];
+  } else {
+    content = prompt;
+  }
+
+  const messages = [
+    {
+      role: 'user',
+      content: content,
     },
-  );
+  ];
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + env.GEMINI_API_KEY,
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: messages,
+      temperature: 0.2,
+      top_p: 0.9,
+      max_tokens: 700,
+      response_format: { type: 'json_object' },
+    }),
+  });
 
   const payload = await response.json().catch(() => null);
 
@@ -333,7 +344,7 @@ async function requestGemini(data, env) {
       payload.error &&
       payload.error.message
         ? String(payload.error.message)
-        : 'Gemini request failed.';
+        : 'Groq request failed.';
     throw createHttpError(clampText(message, 260), 502);
   }
 
@@ -343,14 +354,13 @@ async function requestGemini(data, env) {
 }
 
 function extractModelText(payload) {
-  const candidates = payload && Array.isArray(payload.candidates) ? payload.candidates : [];
-  const firstCandidate = candidates[0] || {};
-  const content = firstCandidate.content || {};
-  const parts = Array.isArray(content.parts) ? content.parts : [];
-  const text = parts.map((part) => part && part.text ? String(part.text) : '').join('').trim();
+  const choices = payload && Array.isArray(payload.choices) ? payload.choices : [];
+  const firstChoice = choices[0] || {};
+  const message = firstChoice.message || {};
+  const text = String(message.content || '').trim();
 
   if (!text) {
-    throw createHttpError('Gemini returned an empty response.', 502);
+    throw createHttpError('Groq returned an empty response.', 502);
   }
 
   return text;
@@ -370,7 +380,7 @@ function parseModelJson(text) {
     }
   }
 
-  throw createHttpError('Gemini returned invalid JSON.', 502);
+  throw createHttpError('Groq returned invalid JSON.', 502);
 }
 
 function sanitizeModelResponse(parsed, candidates) {
