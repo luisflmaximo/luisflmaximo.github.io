@@ -1006,6 +1006,73 @@
       kind: 'link',
       processor: processLinkShortenQr,
     },
+    {
+      id: 'paywall-reader',
+      group: 'Links',
+      title: 'Leitor Sem Paywall',
+      desc: 'Remove a paywall de artigos de notícias e websites apresentando o conteúdo limpo e legível.',
+      inputMode: 'urls',
+      accept: '',
+      actionLabel: 'Desbloquear Artigo',
+      waitHint: 'Insere um link de notícia ou artigo de jornal para desbloquear e ler sem paywall.',
+      badges: ['Link', 'Paywall', 'Leitura'],
+      options: [
+        {
+          id: 'paywallMethod',
+          label: 'Método de Desbloqueio',
+          type: 'select',
+          value: 'txtify',
+          choices: [
+            ['txtify', 'Txtify.it (Texto Limpo - Recomendado)'],
+            ['removepaywall', 'RemovePaywall.com (Visual original)'],
+            ['12ft', '12ft.io (12ft Ladder)'],
+            ['google-cache', 'Google Cache (Versão em cache)'],
+            ['archive', 'Archive.today (Arquivo de Internet)']
+          ]
+        }
+      ],
+      kind: 'link',
+      processor: processPaywallReader,
+    },
+    {
+      id: 'file-share',
+      group: 'Links',
+      title: 'Partilhar Ficheiro (Link Temporário)',
+      desc: 'Carrega um ficheiro local e gera um link temporário seguro para partilha (válido para 1 download).',
+      inputMode: 'files',
+      accept: '',
+      actionLabel: 'Carregar e Gerar Link',
+      waitHint: 'O ficheiro será carregado de forma automática e segura. O link expira após o primeiro download.',
+      badges: ['Ficheiro', 'Partilha', 'Online'],
+      options: [],
+      kind: 'link',
+      processor: processFileShare,
+    },
+    {
+      id: 'student-grades',
+      group: 'PDF',
+      title: 'Separador de Notas por Turma',
+      desc: 'Envia um ficheiro com números de aluno e notas. O site associa automaticamente os nomes e separa os alunos pelas turmas de Gestão.',
+      inputMode: 'files',
+      accept: '.pdf,application/pdf',
+      actionLabel: 'Processar Pauta',
+      waitHint: 'Carrega o ficheiro de notas (com números de alunos e notas). O site utiliza a base de dados integrada para gerar as pautas de cada turma.',
+      badges: ['PDF', 'Excel', 'Offline'],
+      options: [
+        {
+          id: 'gradesTargetClass',
+          label: 'Filtro de Turma',
+          type: 'select',
+          value: 'all_gestao',
+          choices: [
+            ['all_gestao', 'Apenas Gestão (GA1-GA5)'],
+            ['all', 'Todas as Turmas Detetadas']
+          ]
+        }
+      ],
+      kind: 'pdf-heavy',
+      processor: processStudentGrades,
+    },
   ];
 
   const toolMap = tools.reduce(function (acc, tool) {
@@ -1679,6 +1746,8 @@
           '<span style="font-size: 0.68rem; color: var(--text-light); display: block; margin-top: 0.25rem; opacity: 0.85;">Dica: Clique com o botão direito na imagem para copiar diretamente.</span>',
           '</div>'
         ].join('');
+      } else if (result.customHtml) {
+        previewHtml = result.customHtml;
       }
 
       return [
@@ -4823,6 +4892,915 @@
     }
   }
 
+  async function processPaywallReader(urls, options) {
+    const method = String(options.paywallMethod || 'txtify');
+    
+    const validUrls = urls.map(function (url) {
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return null;
+        }
+        return parsed.toString();
+      } catch (_) {
+        return null;
+      }
+    }).filter(Boolean);
+
+    if (!validUrls.length) {
+      throw new Error('Adiciona ligações válidas com http ou https.');
+    }
+
+    const results = [];
+    for (let index = 0; index < validUrls.length; index += 1) {
+      const url = validUrls[index];
+      setProgress((index / validUrls.length) * 100, 'A preparar bypass', url);
+      
+      let bypassedUrl = url;
+      let methodName = '';
+      
+      if (method === 'txtify') {
+        bypassedUrl = 'https://txtify.it/' + url;
+        methodName = 'Txtify.it (Texto)';
+      } else if (method === 'removepaywall') {
+        bypassedUrl = 'https://www.removepaywall.com/' + url;
+        methodName = 'RemovePaywall.com';
+      } else if (method === '12ft') {
+        bypassedUrl = 'https://12ft.io/' + url;
+        methodName = '12ft Ladder';
+      } else if (method === 'google-cache') {
+        bypassedUrl = 'https://webcache.googleusercontent.com/search?q=cache:' + encodeURIComponent(url);
+        methodName = 'Google Cache';
+      } else if (method === 'archive') {
+        bypassedUrl = 'https://archive.today/latest/' + url;
+        methodName = 'Archive.today';
+      }
+      
+      const filename = 'Bypass Paywall - ' + getFilenameFromUrl(url);
+      
+      results.push(createExternalResult(filename, bypassedUrl, 'Método: ' + methodName + ' | Original: ' + url));
+      
+      // Auto open bypassed page in a new window for instant reading
+      window.open(bypassedUrl, '_blank', 'noopener');
+    }
+    
+    addResults(results);
+  }
+
+  async function processFileShare(files, options) {
+    const results = [];
+    
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      setProgress((index / files.length) * 100, 'A carregar ficheiro', file.name);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const response = await fetch('https://file.io', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error('Falha no upload (status ' + response.status + ')');
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+          results.push(createExternalResult(
+            file.name,
+            data.link,
+            'Link temporário ativo (válido para 1 download, expira em: ' + (data.expiry || '14 dias') + ')'
+          ));
+        } else {
+          throw new Error(data.message || 'Erro desconhecido ao carregar ficheiro.');
+        }
+      } catch (err) {
+        console.error('File.io upload failed:', err);
+        throw new Error('Erro ao carregar "' + file.name + '": ' + err.message);
+      }
+    }
+    
+    addResults(results);
+  }
+
+    const STUDENT_DATABASE = {
+    '103401': { name: 'Houda Khayat', classCode: 'GiC1' },
+    '107462': { name: 'Carlos Eduardo Stenert Oliveira', classCode: 'GiA1' },
+    '108383': { name: 'Daniel Fatahi', classCode: 'GiA2' },
+    '109713': { name: 'Edmund Bariyiema Emmanuel', classCode: 'GiC1' },
+    '110939': { name: 'Carolina Isabel Bruno Costa', classCode: 'GA2' },
+    '110964': { name: 'Rui Salomão Calha Bandeira Da Costa Vieira', classCode: 'GA4' },
+    '111831': { name: 'Carlos Jorge De Jesus Arroz', classCode: 'GA4' },
+    '112236': { name: 'Anna Kulaha', classCode: 'GiB1' },
+    '112471': { name: 'Duarte Marques Romixa', classCode: 'GA3' },
+    '113277': { name: 'Anette Cortez', classCode: 'GA3' },
+    '113334': { name: 'Pedro André De Oliveira Simões Gapo', classCode: 'GA5' },
+    '113335': { name: 'Amélia Dos Santos Garcia', classCode: 'GA5' },
+    '114137': { name: 'Jose Martim Mussa Ribeiro', classCode: 'GA1' },
+    '121313': { name: 'Fidel Andrés León Cedeño', classCode: 'GiA1' },
+    '121547': { name: 'Pedro Henrique Neder Fernandes', classCode: 'GiA1' },
+    '122045': { name: 'Mark Vygovskyi', classCode: 'GiA1' },
+    '122081': { name: 'Rongkai Chen', classCode: 'GiB2' },
+    '122260': { name: 'Hugo Alexandre Almeida Sousa', classCode: 'GA3' },
+    '122827': { name: 'Gabriel Ribeiro De Figueiredo Louro', classCode: 'GiB1' },
+    '124005': { name: 'Sharon Nicole Antonio Guiamba', classCode: 'GA4' },
+    '124010': { name: 'Rafael David Mansour Cruz', classCode: 'GiA2' },
+    '124022': { name: 'Mikaeel Farhad Ravat', classCode: 'GA5' },
+    '124098': { name: 'Diogo Gabriel Gomes Pereira', classCode: 'GA2' },
+    '124563': { name: 'Vitor Manuel De Almeida Faria', classCode: 'GA1' },
+    '124594': { name: 'Daniela Filipa Gomes Dos Santos', classCode: 'GA1' },
+    '124596': { name: 'Matilde Capacho De Almeida', classCode: 'GA4' },
+    '124612': { name: 'José Pedro Perez De Magalhães Da Silva Ferreira', classCode: 'GA4' },
+    '124667': { name: 'Artem Chalykh', classCode: 'GiB2' },
+    '125487': { name: 'Diogo Miguel Pedrosa Silva', classCode: 'GA1' },
+    '125607': { name: 'Youssef Ali Youness', classCode: 'GiB1' },
+    '126355': { name: 'Mahdi Qorbani', classCode: 'GA1' },
+    '126584': { name: 'Efe Franklin Eberomah', classCode: 'GiA2' },
+    '126598': { name: 'Licínio Emanuel Mulundo Nkosi', classCode: 'GA1' },
+    '129139': { name: 'Erivander De Jesus Gomes Chinganguela', classCode: 'GA1' },
+    '129142': { name: 'Andrei Govorov', classCode: 'GiB1' },
+    '129148': { name: 'Obinna Paul Ndunwere', classCode: 'GiA1' },
+    '129187': { name: 'Husani Renato Da Rosa Demba', classCode: 'GA1' },
+    '129205': { name: 'Uliana Plyakina', classCode: 'GiB1' },
+    '129406': { name: 'Afonso Manuel Pataca Carreira Silva', classCode: 'GA1' },
+    '129413': { name: 'Carolina Correia Mattos E Lemos', classCode: 'GA2' },
+    '129431': { name: 'Duarte Ribeiro Moura Claré Fanica', classCode: 'GA5' },
+    '129471': { name: 'Cristiana Filipa Ferreira De Araújo', classCode: 'GA3' },
+    '129631': { name: 'Afonso João Ferreira Barreiros', classCode: 'GA2' },
+    '129647': { name: 'Daniel Carvalho Habib', classCode: 'GA1' },
+    '129895': { name: 'Miguel Santiago Baptista Tereso Sarreira', classCode: 'GA1' },
+    '129906': { name: 'Felipe Marinho Zanette', classCode: 'GiA2' },
+    '129939': { name: 'Irineu Vieira Ramos', classCode: 'GA2' },
+    '129946': { name: 'Gabriel Pedroso Marques', classCode: 'GA4' },
+    '130001': { name: 'André Miguel Gamboa Mirinha', classCode: 'GiB2' },
+    '130014': { name: 'José Carlos Sousa Paes De Assumpção', classCode: 'GiB2' },
+    '130039': { name: 'Alexandre Pinto Santiago', classCode: 'GA3' },
+    '130051': { name: 'André Quental Laranjeira', classCode: 'GA2' },
+    '130060': { name: 'Alexandra Bejan Stamate', classCode: 'GA1' },
+    '130061': { name: 'Maria Carolina Peleshok', classCode: 'GA4' },
+    '130063': { name: 'Lorena Maria Da Silva Cruz', classCode: 'GiB2' },
+    '130070': { name: 'Martim Costa Reis Rosa Antunes', classCode: 'GA5' },
+    '130166': { name: 'Guilherme Dos Reis Gomes', classCode: 'GA4' },
+    '130167': { name: 'Francisco Portugal Craveiro Martins', classCode: 'GA1' },
+    '130178': { name: 'Rita Martinho Pinto', classCode: 'GA1' },
+    '131005': { name: 'Patrícia Cristina Matias Trabuco', classCode: 'GA3' },
+    '131463': { name: 'Diogo Miguel Roberto Gomes', classCode: 'GA3' },
+    '131517': { name: 'Eduardo Guilherme Jamal Abrantes', classCode: 'GA5' },
+    '131795': { name: 'Ricardo Cotrim Castro Correia', classCode: 'GA2' },
+    '131802': { name: 'Renato Paulo De Jesus Arroz', classCode: 'GA5' },
+    '131812': { name: 'Daksh Prakash Dhirajlal Govind', classCode: 'GA5' },
+    '131821': { name: 'Rihan Chin Elias Omarji', classCode: 'GA5' },
+    '132076': { name: 'Sandro Alexandre Vicente', classCode: 'GiA1' },
+    '132230': { name: 'Thalia Layssa Horta Ismael', classCode: 'GA5' },
+    '132268': { name: 'Diogo Dias Tavares', classCode: 'GA5' },
+    '132276': { name: 'Jorge Constantino Júnior Uamusse', classCode: 'GA5' },
+    '132916': { name: 'Nuno Rafael Fernandes Dos Reis Soares', classCode: 'GA1' },
+    '13306': { name: 'Celso Constantino Vieira Mallen', classCode: 'GA5' },
+    '133157': { name: 'Ana Beatriz Santos Sousa', classCode: 'GiA1' },
+    '133350': { name: 'Henrique Manuel Rodrigues Teotónio', classCode: 'GA1' },
+    '133415': { name: 'Alexandra Stikhno', classCode: 'GA1' },
+    '133941': { name: 'Ana Flora Jacomine Madrid Furlan', classCode: 'GiA1' },
+    '133988': { name: 'Pavlo Lahun', classCode: 'GiA1' },
+    '134026': { name: 'Md Parvez Hasan', classCode: 'GiA2' },
+    '134193': { name: 'Saviour Baribefe Emmanuel', classCode: 'GiA1' },
+    '134565': { name: 'Mahnoor Rashid', classCode: 'GiA1' },
+    '134662': { name: 'Oghenevwegba Godspower Eheri', classCode: 'GiA1' },
+    '134872': { name: 'Nguyen Viet Quang', classCode: 'GiA1' },
+    '134915': { name: 'Seun Ayomide Salami', classCode: 'GiA2' },
+    '134971': { name: 'Danylo Pidboretskyi', classCode: 'GiA1' },
+    '134991': { name: 'Oleksandra Melnyk', classCode: 'GiA1' },
+    '135163': { name: 'Rayane Mekouar', classCode: 'GiA2' },
+    '135179': { name: 'Ali Satybaldy', classCode: 'GiA1' },
+    '135180': { name: 'Vinícius Grassi Jensen Bittencourt', classCode: 'GiA1' },
+    '135246': { name: 'Quinzinho Aquilino Flôr', classCode: 'GA1' },
+    '135297': { name: 'Ha Vy Nguyen', classCode: 'GiA1' },
+    '135395': { name: 'Mahedi Rahman', classCode: 'GiA1' },
+    '135399': { name: 'Minshu Gurung', classCode: 'GiA1' },
+    '135437': { name: 'Maria Franchesca Weng I Lou', classCode: 'GiA1' },
+    '135630': { name: 'Bahramuddin Najm', classCode: 'GiA2' },
+    '136282': { name: 'Taha Mekouar', classCode: 'GiA2' },
+    '136284': { name: 'Maksym Pidboretskyi', classCode: 'GiA1' },
+    '136342': { name: 'Jainil Tejas Majmundar', classCode: 'GiA2' },
+    '136390': { name: 'Evelina Pilikova', classCode: 'GiA1' },
+    '136541': { name: 'Lina Boukraa', classCode: 'GiA1' },
+    '137062': { name: 'Alícia Marina Gomes Alfredo', classCode: 'GA1' },
+    '137519': { name: 'Emilio Alejandro Goyes Troya', classCode: 'GiA1' },
+    '137563': { name: 'Sophie Virgínia Davies', classCode: 'GiA2' },
+    '137585': { name: 'Joshua Oluwatoyin Munis', classCode: 'GiA2' },
+    '137799': { name: 'Eduardo Jorge Abalada Jerónimo', classCode: 'GiA1' },
+    '137808': { name: 'Inês Nascimento Cruz De Pinho Pardal', classCode: 'GA1' },
+    '137915': { name: 'Maksym Melnyk', classCode: 'GiA2' },
+    '137934': { name: 'Weiyu Li', classCode: 'GiA2' },
+    '137977': { name: 'Mariana Dos Santos Inácio Gil', classCode: 'GA3' },
+    '137995': { name: 'Raihana Yosoufi', classCode: 'GiA1' },
+    '138162': { name: 'Rostyslav Sikora', classCode: 'GiA2' },
+    '138288': { name: 'Marta Carina Silva Lino Nunes Maio', classCode: 'GA4' },
+    '138298': { name: 'Marco Aurélio Fernandes De Sousa', classCode: 'GA1' },
+    '138402': { name: 'Manuel Pedro Gonçalves Caeiro Da Fonseca', classCode: 'GA2' },
+    '138428': { name: 'David Miguel Ferreira Duarte', classCode: 'GA2' },
+    '138473': { name: 'Nuno Ambar Bettencourt Godoy Reis', classCode: 'GA5' },
+    '138488': { name: 'Leonor Maria De Oliveira Palma Machado Jorge', classCode: 'GiA1' },
+    '138498': { name: 'Beatriz Morgado Rangel', classCode: 'GA5' },
+    '138512': { name: 'Francisco Oliveira Diogo Dos Reis Delgado', classCode: 'GA5' },
+    '138517': { name: 'Mafalda Cordeiro Da Silva Frazão', classCode: 'GA4' },
+    '138518': { name: 'Rita Isabel Cinzas Dos Santos', classCode: 'GA4' },
+    '138636': { name: 'Tiago Fonseca Nunes Sanches', classCode: 'GA2' },
+    '138641': { name: 'Margarida Branco Nunes', classCode: 'GA4' },
+    '138648': { name: 'Madalena Pinheiro Da Fonseca', classCode: 'GA2' },
+    '138651': { name: 'Igor Melnyk', classCode: 'GA5' },
+    '138697': { name: 'Gustavo Galvão Paiva', classCode: 'GA4' },
+    '138698': { name: 'Maria Alves De Pina Do Rego Lopes', classCode: 'GA3' },
+    '138850': { name: 'Sofia Fialho Coelho Anino Tavares', classCode: 'GA3' },
+    '138851': { name: 'João Charas Minhalma', classCode: 'GA3' },
+    '138852': { name: 'Rodrigo Manuel Colaço Raposo', classCode: 'GA3' },
+    '138853': { name: 'Dânia Nolasco Pinto', classCode: 'GA3' },
+    '138854': { name: 'Gonçalo Moreira Dos Santos Sarzedas', classCode: 'GA4' },
+    '138855': { name: 'Guilherme Manuel Serrano Dos Santos', classCode: 'GA5' },
+    '138857': { name: 'Ana Margarida Nunes Pimentel Serrano Mousinho', classCode: 'GA1' },
+    '138859': { name: 'Joana Carlota De Sousa Marques Da Silva', classCode: 'GA3' },
+    '138860': { name: 'David Contente Fernandes', classCode: 'GA4' },
+    '138861': { name: 'Joana Filipa Oliveira Senos De Trindade', classCode: 'GA3' },
+    '138862': { name: 'Matilde Filipa Venâncio Madeira', classCode: 'GA2' },
+    '138863': { name: 'Matilde Dias Monteiro Moreira Carvalho', classCode: 'GA3' },
+    '138864': { name: 'Margarida Amado Monteiro', classCode: 'GA3' },
+    '138865': { name: 'Vasco Ribeiro De Carvalho Soares Fatela', classCode: 'GA3' },
+    '138866': { name: 'Leonor Martinho Dos Santos', classCode: 'GA3' },
+    '138867': { name: 'Henrique Martins Ruivo', classCode: 'GA1' },
+    '138869': { name: 'Lucas Ungureanu', classCode: 'GA3' },
+    '138870': { name: 'António Castelhano Litwinski', classCode: 'GA5' },
+    '138871': { name: 'Filipe Borda De Água Travassos', classCode: 'GA5' },
+    '138872': { name: 'Ana Caetano Peliteiro', classCode: 'GA1' },
+    '138873': { name: 'Gonçalo De Almeida Mendes', classCode: 'GA5' },
+    '138874': { name: 'Afonso Caldeira Rodrigues Dos Santos', classCode: 'GA2' },
+    '138875': { name: 'Afonso De Oliveira Marto Diaz Gonçalves', classCode: 'GA2' },
+    '138876': { name: 'Inês Martins Casula', classCode: 'GiA2' },
+    '138877': { name: 'Luisa Ramos Pinto Saldanha Sarmento', classCode: 'GA2' },
+    '138878': { name: 'Cláudia Maria Talaia Camões Serra', classCode: 'GA3' },
+    '138879': { name: 'Tiago Daniel Ribeiro Tamborino', classCode: 'GA1' },
+    '138880': { name: 'Rodrigo Miguel Dos Santos Salvador', classCode: 'GA3' },
+    '138881': { name: 'Pedro Miguel De Matos Marques Bom', classCode: 'GA4' },
+    '138882': { name: 'Alexandre Miguel Martins De Oliveira', classCode: 'GA5' },
+    '138883': { name: 'Isis Faritas Morais', classCode: 'GA4' },
+    '138885': { name: 'Francisco Lucas Costa', classCode: 'GA3' },
+    '138886': { name: 'Nikelly Victória Siqueira Da Cruz', classCode: 'GiA2' },
+    '138887': { name: 'Marta Panaca Salvado Das Neves', classCode: 'GA5' },
+    '138888': { name: 'Afonso De Oliveira Rodrigues', classCode: 'GA4' },
+    '138889': { name: 'Samuel Da Costa Tenente Goncalves', classCode: 'GA4' },
+    '138891': { name: 'Mónica Galveias Gameiro', classCode: 'GA1' },
+    '138892': { name: 'Lourenço Baptista Do Carmo', classCode: 'GA3' },
+    '138893': { name: 'Afonso Maria Longo Mateus', classCode: 'GA1' },
+    '138895': { name: 'Diogo Filipe Da Silva Domingos', classCode: 'GA3' },
+    '138896': { name: 'Ricardo Jorge Ferreira Da Costa', classCode: 'GA3' },
+    '138898': { name: 'Vera Lorena Rodrigues Cartas Rolo', classCode: 'GA2' },
+    '138899': { name: 'Maria Madalena Rito Martins Nicolau', classCode: 'GA2' },
+    '138901': { name: 'Afonso Simões De Almeida', classCode: 'GA2' },
+    '138907': { name: 'Sofia Guerra Custódio', classCode: 'GA1' },
+    '138908': { name: 'Maria Francisca Alves Da Costa', classCode: 'GA2' },
+    '138909': { name: 'Thais Maria Ribeiro Maldonado', classCode: 'GA3' },
+    '138910': { name: 'Simão Grosso Rodrigues Rivera Ferreira', classCode: 'GA2' },
+    '138912': { name: 'Vasco Rafael Lourenço Claro', classCode: 'GA3' },
+    '138913': { name: 'Tiago Gaspar Pinto', classCode: 'GA2' },
+    '138916': { name: 'Rodrigo Mer Neiva', classCode: 'GiA2' },
+    '138917': { name: 'Afonso Miguel Fernandes Diogo', classCode: 'GA4' },
+    '138918': { name: 'Mariana Potes Lugo Figueira Rodeia', classCode: 'GiA2' },
+    '138919': { name: 'Lara Fialho De Oliveira', classCode: 'GA1' },
+    '138920': { name: 'Maria Margarida Coito Sobral Grosso', classCode: 'GA5' },
+    '138921': { name: 'Catarina Gonçalves Da Silva', classCode: 'GA5' },
+    '138922': { name: 'Lourenço Manuel Vilas Afonso', classCode: 'GA2' },
+    '138923': { name: 'Luís Filipe Lopes Máximo', classCode: 'GA2' },
+    '138924': { name: 'Maria De Fátima Biscaia Torres', classCode: 'GA3' },
+    '138925': { name: 'José Pedro Lagareiro Grilo', classCode: 'GA5' },
+    '138930': { name: 'João Reinaldo Palma Pires', classCode: 'GA4' },
+    '138931': { name: 'João Maria Da Silva Pereira Da Costa', classCode: 'GiA2' },
+    '138933': { name: 'Gonçalo Filipe Marriço Teles Carvalho', classCode: 'GiA2' },
+    '138934': { name: 'Inês Marcelino Neves', classCode: 'GA3' },
+    '138936': { name: 'Constança Margarida De Campos Faísca', classCode: 'GA5' },
+    '138937': { name: 'Sebastiao Sequeira Tavares Cadete', classCode: 'GA5' },
+    '138938': { name: 'Francisco Vilar Ruivo Carapeto', classCode: 'GA3' },
+    '138939': { name: 'Pedro Girão Santos Duarte Nascimento', classCode: 'GA2' },
+    '138941': { name: 'Zoe De Morais Estrela', classCode: 'GA3' },
+    '138942': { name: 'Tiago Carrilho Miranda Carrapiço', classCode: 'GA2' },
+    '138943': { name: 'Victoria Ponomareva', classCode: 'GA2' },
+    '138944': { name: 'André Moás Simões De Sá', classCode: 'GA5' },
+    '138945': { name: 'Rodrigo Ferreira Antunes', classCode: 'GA5' },
+    '138946': { name: 'Tiago Filipe Calado Mestre', classCode: 'GA4' },
+    '138947': { name: 'Rafael Sofrino Rodrigues', classCode: 'GA4' },
+    '138950': { name: 'Matthew Williams', classCode: 'GiA2' },
+    '138951': { name: 'Rodrigo Maia Aguiar Martins', classCode: 'GA3' },
+    '138952': { name: 'Catarina Intaon Barros', classCode: 'GiA2' },
+    '138953': { name: 'Xavier Avelar Eleutério', classCode: 'GA2' },
+    '138954': { name: 'Júlia Carvalho Henriques', classCode: 'GA3' },
+    '138955': { name: 'Joana Marta Antunes Fernandes', classCode: 'GA3' },
+    '138956': { name: 'João Miguel Jesus Marques', classCode: 'GA2' },
+    '138957': { name: 'Sara Gouveia Miranda', classCode: 'GA2' },
+    '138958': { name: 'Ana Francisca De Oliveira Abreu', classCode: 'GA3' },
+    '138960': { name: 'Catarina Rodrigues Grácio Noval Frederico', classCode: 'GiA2' },
+    '138961': { name: 'Matilde Da Rocha Cordeiro', classCode: 'GA3' },
+    '138962': { name: 'Inês Ferreira Rodrigues', classCode: 'GA1' },
+    '138964': { name: 'João Afonso De Magalhães Martins', classCode: 'GA2' },
+    '138965': { name: 'Maria Francisca Pereira Fernandes', classCode: 'GA1' },
+    '138966': { name: 'Beatriz Oliveira Martins', classCode: 'GA1' },
+    '138968': { name: 'Madalena Marta Gomes', classCode: 'GA1' },
+    '138971': { name: 'Inês Freitas Rodrigues', classCode: 'GA4' },
+    '138972': { name: 'Inês Brás Miranda', classCode: 'GA2' },
+    '138974': { name: 'Ana Rita Talhas Simões', classCode: 'GA2' },
+    '138975': { name: 'Inês Paixão Martins Santos', classCode: 'GA5' },
+    '138976': { name: 'Pedro Lopes Da Silva', classCode: 'GA5' },
+    '138978': { name: 'Micaela Fonseca Gonçalves', classCode: 'GA2' },
+    '138979': { name: 'Margarida Sofia Amado Marques', classCode: 'GA2' },
+    '138980': { name: 'Tiago António Antunes Correia', classCode: 'GA1' },
+    '138981': { name: 'Matilde Maria Vieira Ribeiro Sousa Santos', classCode: 'GA2' },
+    '138982': { name: 'Pedro De Magalhães Craveiro Martins', classCode: 'GA3' },
+    '138984': { name: 'Duarte Rodrigues Marques', classCode: 'GA3' },
+    '138985': { name: 'Matilde Maria Silva Gonçalves', classCode: 'GA2' },
+    '138986': { name: 'Leonardo José Ribeiro Mendes', classCode: 'GA1' },
+    '138987': { name: 'Leonor Gomes De Oliveira', classCode: 'GA1' },
+    '138988': { name: 'Matilde Ribeiro Machado', classCode: 'GA1' },
+    '138989': { name: 'Mariana Pacheco Da Assunção', classCode: 'GA1' },
+    '138990': { name: 'Maria Leonor Ferreira Fragoso', classCode: 'GA2' },
+    '138991': { name: 'Margarida Costa Gaia', classCode: 'GA2' },
+    '138992': { name: 'Tomás Reis Silva', classCode: 'GA5' },
+    '138993': { name: 'Inês Domingos Grilo', classCode: 'GiA2' },
+    '138995': { name: 'Laura Emídio Salvado', classCode: 'GA2' },
+    '138996': { name: 'Viviane Erika Starte', classCode: 'GiA2' },
+    '138997': { name: 'Isabel Alexandra Popas', classCode: 'GA3' },
+    '138998': { name: 'Matilde Neves Santos Augusto', classCode: 'GiA2' },
+    '138999': { name: 'Rafael Santana Martins', classCode: 'GA5' },
+    '139000': { name: 'Laura Puga Viana Melo', classCode: 'GA5' },
+    '139003': { name: 'Diogo Martins E Castro', classCode: 'GiA2' },
+    '139004': { name: 'António Maria De Sousa Fernandes Serra Lopes', classCode: 'GA2' },
+    '139005': { name: 'Gustavo Mariano Granja', classCode: 'GiA2' },
+    '139006': { name: 'Miguel Lopes Rodrigues', classCode: 'GA3' },
+    '139008': { name: 'Manuel Vicente Martins Estrada', classCode: 'GA3' },
+    '139009': { name: 'Matilde Macedo De Serpa Soares', classCode: 'GA2' },
+    '139010': { name: 'Goncalo Clemente Folgado', classCode: 'GA4' },
+    '139011': { name: 'Daniela Mélanie Rico Dos Santos Cardoso', classCode: 'GA2' },
+    '139012': { name: 'Mariana Veludo Da Cruz', classCode: 'GA1' },
+    '139013': { name: 'Leonor Bracinhos Miranda', classCode: 'GA5' },
+    '139014': { name: 'Marta Dinis Paiva De Oliveira', classCode: 'GA3' },
+    '139015': { name: 'Beatriz Nobre Pinto', classCode: 'GA1' },
+    '139016': { name: 'Leonor Simoes Lourenco', classCode: 'GA2' },
+    '139017': { name: 'Constança Viseu Da Vinha Batalha E Veiga', classCode: 'GA3' },
+    '139019': { name: 'Gonçalo Melo Simoes Correia Leal', classCode: 'GA4' },
+    '139021': { name: 'Cristina Maria Rusev', classCode: 'GA2' },
+    '139022': { name: 'Afonso Barcia Leitao', classCode: 'GA2' },
+    '139028': { name: 'Erica Calestru', classCode: 'GA1' },
+    '139047': { name: 'Margarida Oliveira Pinto Cardoso Lopes', classCode: 'GA2' },
+    '139051': { name: 'Guilherme Safara Madureira', classCode: 'GA4' },
+    '139090': { name: 'Rodrigo Soares Da Silva Correia', classCode: 'GA1' },
+    '139124': { name: 'Miguel Jin', classCode: 'GA5' },
+    '139145': { name: 'André Jesus Reis', classCode: 'GA4' },
+    '139158': { name: 'Margarida Rodrigues Gouveia', classCode: 'GA2' },
+    '139531': { name: 'Mariana Costa Franco Mourão Rodrigues', classCode: 'GA2' },
+    '139541': { name: 'Martim Silva Mendonça Dos Santos Quintais', classCode: 'GA5' },
+    '139600': { name: 'Rodrigo Amaro Folgado', classCode: 'GiA1' },
+    '139611': { name: 'Carlota De Lemos Beltran Gonçalves De Sousa', classCode: 'GA1' },
+    '139616': { name: 'Ines Filipa Caldeira Dias', classCode: 'GA4' },
+    '139958': { name: 'Kseniia Honcharova', classCode: 'GiA1' },
+    '139960': { name: 'Oleksandra Yatsenko', classCode: 'GiA1' },
+    '140089': { name: 'António Baptista Rebocho', classCode: 'GA4' },
+    '140090': { name: 'Diogo Miguel Oliveira Janeira', classCode: 'GA4' },
+    '140178': { name: 'Essanjo Nayara Da Silva Quissanga', classCode: 'GA1' },
+    '140207': { name: 'Miguel Maria Morais Franco', classCode: 'GA4' },
+    '140211': { name: 'Tomás Maia Teodoro Bernardino Januário', classCode: 'GA3' },
+    '140214': { name: 'Núria Menezes Umbelina Coche Da Costa', classCode: 'GA3' },
+    '140217': { name: 'Leonor Soares Silva Duarte', classCode: 'GA5' },
+    '140219': { name: 'Muhammad Sayyed Mustak Anif Aboobacar', classCode: 'GA5' },
+    '140312': { name: 'Tiago De Matos Monteiro Gama Pinto', classCode: 'GA4' },
+    '140313': { name: 'Margarida Fragoso Pedrosa', classCode: 'GA4' },
+    '140316': { name: 'Matilde Da Costa Pereira Ribeiro Henriques', classCode: 'GiA1' },
+    '140317': { name: 'Marta Oliveira Tropa Alçada Baptista', classCode: 'GiA1' },
+    '140318': { name: 'António Lourenço Alves Dos Santos', classCode: 'GA4' },
+    '140319': { name: 'Rodrigo José Viegas Ferreira', classCode: 'GA5' },
+    '140320': { name: 'Matilde Marques Bernardo', classCode: 'GA4' },
+    '140322': { name: 'Lourenço De Assis Barradas Palma De Brito Paes', classCode: 'GA4' },
+    '140324': { name: 'Bernardo Rafael Dos Santos De Oliveira Gonçalves', classCode: 'GiA2' },
+    '140325': { name: 'Matilde Nogueira Esteves', classCode: 'GiA2' },
+    '140326': { name: 'Diego Almeida De Elvas Carreira', classCode: 'GA3' },
+    '140596': { name: 'Tamara Sofia Almeida Ali', classCode: 'GA5' },
+    '140601': { name: 'Simão Casanova Moraes De Sarmento Honrado', classCode: 'GiA1' },
+    '140647': { name: 'Vanessa Sanches Ferreira Tavares', classCode: 'GA3' },
+    '140727': { name: 'Anton Ladyka', classCode: 'GA3' },
+    '140748': { name: 'Mariana Karpova', classCode: 'GiA2' },
+    '140753': { name: 'Eline Nelise Brito De Carvalho', classCode: 'GA2' },
+    '140815': { name: 'Pablo Vilas Cassamo', classCode: 'GA1' },
+    '140892': { name: 'Suélen Assif Mussá', classCode: 'GA1' },
+    '141165': { name: 'Gabriela Yasmin Fernandes Brook', classCode: 'GA4' },
+    '141168': { name: 'Yannik Ailton Ismail Cumaio', classCode: 'GA1' },
+    '141302': { name: 'Yanick Dias Ambalal', classCode: 'GA1' },
+    '141643': { name: 'Geyse Cassamo Semá', classCode: 'GA3' },
+    '78643': { name: 'Gonçalo Da Silva Cunha Santos', classCode: 'GA1' },
+    '88145': { name: 'António Manuel Duarte Paes De Sousa', classCode: 'GA4' },
+    '93010': { name: 'Diogo Fortunato Quadros Silva', classCode: 'GA4' },
+    '94653': { name: 'Eric Badrudin', classCode: 'GA1' },
+    '99564': { name: 'Cleiton Alves De Albuquerque Fundisse', classCode: 'GA4' },
+  };
+
+  async function processStudentGrades(files, options) {
+    if (files.length < 1) {
+      throw new Error('Por favor, carregue pelo menos 1 ficheiro de notas.');
+    }
+    
+    const targetClassFilter = String(options.gradesTargetClass || 'all_gestao');
+    const pdfjs = await ensurePdfJs();
+    
+    // Initialize database with preloaded students
+    const studentsDb = Object.assign({}, STUDENT_DATABASE);
+    
+    // 1. Build/update the student database from all files containing class codes (if any)
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      setProgress(5 + (index / files.length) * 35, 'A processar base de dados de alunos', file.name);
+      
+      const fileBytes = new Uint8Array(await file.arrayBuffer());
+      const pdf = await pdfjs.getDocument({ data: fileBytes }).promise;
+      
+      for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex += 1) {
+        const page = await pdf.getPage(pageIndex);
+        const textContent = await page.getTextContent();
+        
+        const lineMap = {};
+        textContent.items.forEach(function (item) {
+          const y = Math.round(item.transform[5] * 2) / 2;
+          if (!lineMap[y]) lineMap[y] = [];
+          lineMap[y].push(item);
+        });
+        
+        const ys = Object.keys(lineMap).map(Number).sort(function (a, b) { return b - a; });
+        ys.forEach(function (y) {
+          const items = lineMap[y].sort(function (a, b) { return a.transform[4] - b.transform[4]; });
+          const lineStr = items.map(function (item) { return item.str; }).join(' ').trim();
+          
+          const numMatch = lineStr.match(/^(\d{5,6})/);
+          if (numMatch) {
+            const studentNum = numMatch[1];
+            const rest = lineStr.slice(studentNum.length).trim();
+            
+            const classMatch = rest.match(/(GA\d|Gi[A-Z]\d)/);
+            if (classMatch) {
+              const classCode = classMatch[1];
+              const classPos = rest.indexOf(classCode);
+              const name = rest.slice(0, classPos).trim();
+              studentsDb[studentNum] = {
+                name: name,
+                classCode: classCode
+              };
+            }
+          }
+        });
+      }
+    }
+    
+    // 2. Parse all files to read notes/details for matched student numbers
+    const allMatches = {};
+    
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      setProgress(40 + (index / files.length) * 45, 'A ler notas dos alunos', file.name);
+      
+      const fileBytes = new Uint8Array(await file.arrayBuffer());
+      const pdf = await pdfjs.getDocument({ data: fileBytes }).promise;
+      
+      for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex += 1) {
+        const page = await pdf.getPage(pageIndex);
+        const textContent = await page.getTextContent();
+        
+        const lineMap = {};
+        textContent.items.forEach(function (item) {
+          const y = Math.round(item.transform[5] * 2) / 2;
+          if (!lineMap[y]) lineMap[y] = [];
+          lineMap[y].push(item);
+        });
+        
+        const ys = Object.keys(lineMap).map(Number).sort(function (a, b) { return b - a; });
+        ys.forEach(function (y) {
+          const items = lineMap[y].sort(function (a, b) { return a.transform[4] - b.transform[4]; });
+          const lineStr = items.map(function (item) { return item.str; }).join(' ').trim();
+          
+          const numMatch = lineStr.match(/^(\d{5,6})/) || lineStr.match(/\b(\d{5,6})\b/);
+          if (numMatch) {
+            const studentNum = numMatch[1];
+            const dbInfo = studentsDb[studentNum];
+            if (dbInfo) {
+              let details = lineStr.replace(studentNum, '').trim();
+              
+              if (dbInfo.name) {
+                const cleanName = dbInfo.name.replace(/\s+/g, '');
+                const cleanDetails = details.replace(/\s+/g, '');
+                if (cleanDetails.includes(cleanName)) {
+                  details = details.replace(dbInfo.name, '').trim();
+                }
+              }
+              
+              details = details.replace(dbInfo.classCode, '').trim();
+              details = details.replace(/\s+/g, ' ').trim();
+              
+              if (details) {
+                if (!allMatches[studentNum]) {
+                  allMatches[studentNum] = {
+                    num: studentNum,
+                    name: dbInfo.name,
+                    classCode: dbInfo.classCode,
+                    detailsList: []
+                  };
+                }
+                if (!allMatches[studentNum].detailsList.includes(details)) {
+                  allMatches[studentNum].detailsList.push(details);
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+    
+    // Group and filter
+    const grouped = {};
+    const matchesArray = Object.values(allMatches);
+    
+    matchesArray.forEach(function (row) {
+      const isGestao = row.classCode.startsWith('GA') || row.classCode.startsWith('Gi');
+      if (targetClassFilter === 'all_gestao' && !isGestao) {
+        return;
+      }
+      
+      row.details = row.detailsList.join(' | ') || 'Presente';
+      
+      if (!grouped[row.classCode]) {
+        grouped[row.classCode] = [];
+      }
+      grouped[row.classCode].push(row);
+    });
+    
+    const detectedClasses = Object.keys(grouped).sort();
+    if (!detectedClasses.length) {
+      throw new Error('Nenhum aluno das turmas pretendidas foi correspondido nos ficheiros de notas.');
+    }
+    
+    setProgress(90, 'A gerar ficheiros', 'A comprimir pautas por turma...');
+    const zip = new window.JSZip();
+    
+    detectedClasses.forEach(function (classCode) {
+      const students = grouped[classCode];
+      students.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      
+      let csvContent = '\uFEFF';
+      csvContent += 'Número;Nome;Turma;Detalhes/Nota\n';
+      students.forEach(function (s) {
+        csvContent += s.num + ';' + s.name + ';' + s.classCode + ';' + s.details + '\n';
+      });
+      
+      zip.file('Turma_' + classCode + '.csv', csvContent);
+    });
+    
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    
+    // Save to global window for sharing
+    window.lastProcessedGrades = {
+      detectedClasses: detectedClasses,
+      grouped: grouped
+    };
+    
+    let dashboardId = 'db_' + Date.now();
+    let tabsHtml = [];
+    let contentsHtml = [];
+    
+    tabsHtml.push('<button class="grades-tab active" onclick="window.switchGradesTab(this, \'all\', \'' + dashboardId + '\')">Todas</button>');
+    
+    detectedClasses.forEach(function (classCode) {
+      tabsHtml.push('<button class="grades-tab" onclick="window.switchGradesTab(this, \'' + classCode + '\', \'' + dashboardId + '\')">' + classCode + '</button>');
+    });
+    
+    const searchId = 'search_' + dashboardId;
+    
+    detectedClasses.forEach(function (classCode) {
+      const students = grouped[classCode];
+      students.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      
+      let rowsHtml = students.map(function (s) {
+        return '<tr class="grade-row" data-search="' + escapeHtml((s.num + ' ' + s.name).toLowerCase()) + '">' +
+          '<td>' + escapeHtml(s.num) + '</td>' +
+          '<td>' + escapeHtml(s.name) + '</td>' +
+          '<td>' + escapeHtml(s.classCode) + '</td>' +
+          '<td>' + escapeHtml(s.details) + '</td>' +
+          '</tr>';
+      }).join('');
+      
+      contentsHtml.push(
+        '<div class="grades-table-wrapper" data-class="' + classCode + '">' +
+        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">' +
+        '<div style="font-weight: 600; color: var(--accent-mid);">' + classCode + ' (' + students.length + ' alunos)</div>' +
+        '<button type="button" class="btn btn--outline btn--sm" onclick="window.downloadClassPdf(\'' + classCode + '\', \'' + dashboardId + '\')" style="padding: 0.25rem 0.6rem; font-size: 0.72rem; border-radius: 4px; font-weight: 600; cursor: pointer; border: 1px solid var(--accent-mid); color: var(--accent-mid); background: transparent;">Descarregar PDF</button>' +
+        '</div>' +
+        '<table class="grades-table">' +
+        '<thead><tr><th>Número</th><th>Nome</th><th>Turma</th><th>Nota/Detalhe</th></tr></thead>' +
+        '<tbody>' + rowsHtml + '</tbody>' +
+        '</table>' +
+        '</div>'
+      );
+    });
+    
+    const customHtml = [
+      '<div class="grades-dashboard" id="' + dashboardId + '" style="margin-top: 1rem;">',
+      '<div style="padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">',
+      '<div style="font-size: 0.85rem; font-weight: 600; color: var(--text);">Painel de Notas por Turma</div>',
+      '<div style="display: flex; align-items: center; gap: 0.5rem;">',
+      '<input type="text" id="' + searchId + '" placeholder="Pesquisar aluno..." oninput="window.filterGradesDashboard(this.value, \'' + dashboardId + '\')" style="padding: 0.35rem 0.75rem; font-size: 0.78rem; border-radius: 6px; border: 1px solid var(--border); outline: none; max-width: 150px; background: var(--surface); color: var(--text);" />',
+      '<button type="button" class="btn btn--outline btn--sm" onclick="window.shareGradesDashboard(\'db_placeholder\', this)" style="padding: 0.35rem 0.75rem; font-size: 0.78rem; border-radius: 6px; font-weight: 600; cursor: pointer; border: 1px solid var(--accent-mid); color: var(--accent-mid); background: transparent; display: flex; align-items: center; gap: 0.3rem;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186.002-.003a2.25 2.25 0 0 1 3.218-3.003m-3.22 3.006L18 6.75m-10.783 6.34 10.783 4.16m-10.783-4.16.002.003a2.25 2.25 0 0 0 3.218 3.003M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>Partilhar</button>',
+      '</div>',
+      '</div>',
+      '<div class="grades-tabs">',
+      tabsHtml.join(''),
+      '</div>',
+      '<div class="grades-content" style="max-height: 320px; overflow-y: auto; padding: 1rem;">',
+      contentsHtml.join('<hr style="margin: 1.5rem 0; border: none; border-top: 1px dashed var(--border);" class="grades-divider" />'),
+      '</div>',
+      '</div>'
+    ].join('');
+    
+    // Dynamically bind dashboardId
+    const finalHtml = customHtml.replace('db_placeholder', dashboardId);
+    
+    registerGradesGlobalHelpers();
+    
+    addResults([
+      {
+        name: 'Notas_Separadas_por_Turma.zip',
+        blob: zipBlob,
+        url: URL.createObjectURL(zipBlob),
+        meta: 'Pautas de Gestão prontas. Total: ' + matchesArray.length + ' correspondências.',
+        customHtml: finalHtml
+      }
+    ]);
+  }
+
+  async function showSharedGrades(gradesUrl) {
+    try {
+      setActiveTool('student-grades');
+      setProgress(30, 'A carregar pauta partilhada...', 'A ler dados...');
+      
+      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(gradesUrl);
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error('Não foi possível carregar a pauta.');
+      const json = await res.json();
+      
+      const data = JSON.parse(json.contents);
+      if (!data || !data.detectedClasses || !data.grouped) {
+        throw new Error('Dados de partilha inválidos.');
+      }
+      
+      window.lastProcessedGrades = data;
+      
+      let dashboardId = 'db_' + Date.now();
+      let tabsHtml = [];
+      let contentsHtml = [];
+      
+      tabsHtml.push('<button class="grades-tab active" onclick="window.switchGradesTab(this, \'all\', \'' + dashboardId + '\')">Todas</button>');
+      
+      data.detectedClasses.forEach(function (classCode) {
+        tabsHtml.push('<button class="grades-tab" onclick="window.switchGradesTab(this, \'' + classCode + '\', \'' + dashboardId + '\')">' + classCode + '</button>');
+      });
+      
+      const searchId = 'search_' + dashboardId;
+      
+      data.detectedClasses.forEach(function (classCode) {
+        const students = data.grouped[classCode];
+        
+        let rowsHtml = students.map(function (s) {
+          return '<tr class="grade-row" data-search="' + escapeHtml((s.num + ' ' + s.name).toLowerCase()) + '">' +
+            '<td>' + escapeHtml(s.num) + '</td>' +
+            '<td>' + escapeHtml(s.name) + '</td>' +
+            '<td>' + escapeHtml(s.classCode) + '</td>' +
+            '<td>' + escapeHtml(s.details) + '</td>' +
+            '</tr>';
+        }).join('');
+        
+        contentsHtml.push(
+          '<div class="grades-table-wrapper" data-class="' + classCode + '">' +
+          '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">' +
+          '<div style="font-weight: 600; color: var(--accent-mid);">' + classCode + ' (' + students.length + ' alunos)</div>' +
+          '<button type="button" class="btn btn--outline btn--sm" onclick="window.downloadClassPdf(\'' + classCode + '\', \'' + dashboardId + '\')" style="padding: 0.25rem 0.6rem; font-size: 0.72rem; border-radius: 4px; font-weight: 600; cursor: pointer; border: 1px solid var(--accent-mid); color: var(--accent-mid); background: transparent;">Descarregar PDF</button>' +
+          '</div>' +
+          '<table class="grades-table">' +
+          '<thead><tr><th>Número</th><th>Nome</th><th>Turma</th><th>Nota/Detalhe</th></tr></thead>' +
+          '<tbody>' + rowsHtml + '</tbody>' +
+          '</table>' +
+          '</div>'
+        );
+      });
+      
+      const customHtml = [
+        '<div class="grades-dashboard" id="' + dashboardId + '" style="margin-top: 1rem;">',
+        '<div style="padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">',
+        '<div style="font-size: 0.85rem; font-weight: 600; color: var(--text);">Painel de Notas por Turma (Partilhado)</div>',
+        '<div style="display: flex; align-items: center; gap: 0.5rem;">',
+        '<input type="text" id="' + searchId + '" placeholder="Pesquisar aluno..." oninput="window.filterGradesDashboard(this.value, \'' + dashboardId + '\')" style="padding: 0.35rem 0.75rem; font-size: 0.78rem; border-radius: 6px; border: 1px solid var(--border); outline: none; max-width: 150px; background: var(--surface); color: var(--text);" />',
+        '<button type="button" class="btn btn--outline btn--sm" onclick="window.shareGradesDashboard(\'' + dashboardId + '\', this)" style="padding: 0.35rem 0.75rem; font-size: 0.78rem; border-radius: 6px; font-weight: 600; cursor: pointer; border: 1px solid var(--accent-mid); color: var(--accent-mid); background: transparent; display: flex; align-items: center; gap: 0.3rem;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186.002-.003a2.25 2.25 0 0 1 3.218-3.003m-3.22 3.006L18 6.75m-10.783 6.34 10.783 4.16m-10.783-4.16.002.003a2.25 2.25 0 0 0 3.218 3.003M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>Partilhar</button>',
+        '</div>',
+        '</div>',
+        '<div class="grades-tabs">',
+        tabsHtml.join(''),
+        '</div>',
+        '<div class="grades-content" style="max-height: 320px; overflow-y: auto; padding: 1rem;">',
+        contentsHtml.join('<hr style="margin: 1.5rem 0; border: none; border-top: 1px dashed var(--border);" class="grades-divider" />'),
+        '</div>',
+        '</div>'
+      ].join('');
+      
+      registerGradesGlobalHelpers();
+      
+      setProgress(100, 'Pauta carregada com sucesso!', 'Pronto.');
+      
+      addResults([
+        {
+          name: 'Pauta_Partilhada.pdf',
+          meta: 'Carregada a partir do link de partilha.',
+          customHtml: customHtml
+        }
+      ]);
+      
+      setTimeout(function() {
+        const dbEl = document.getElementById(dashboardId);
+        if (dbEl) dbEl.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+      
+    } catch (err) {
+      console.error(err);
+      setProgress(0, 'Erro ao carregar link', err.message);
+      alert('Não foi possível carregar a pauta partilhada: ' + err.message);
+    }
+  }
+
+  function registerGradesGlobalHelpers() {
+    if (window.gradesHelpersRegistered) return;
+    window.gradesHelpersRegistered = true;
+    
+    window.switchGradesTab = function (button, classCode, dashboardId) {
+      const dashboard = document.getElementById(dashboardId);
+      if (!dashboard) return;
+      
+      dashboard.querySelectorAll('.grades-tab').forEach(function (btn) {
+        btn.classList.toggle('active', btn === button);
+      });
+      
+      dashboard.querySelectorAll('.grades-table-wrapper').forEach(function (wrapper) {
+        const wrapperClass = wrapper.dataset.class;
+        if (classCode === 'all' || wrapperClass === classCode) {
+          wrapper.style.display = 'block';
+        } else {
+          wrapper.style.display = 'none';
+        }
+      });
+      
+      dashboard.querySelectorAll('.grades-divider').forEach(function (divider) {
+        divider.style.display = classCode === 'all' ? 'block' : 'none';
+      });
+    };
+    
+    window.filterGradesDashboard = function (query, dashboardId) {
+      const dashboard = document.getElementById(dashboardId);
+      if (!dashboard) return;
+      
+      const q = query.trim().toLowerCase();
+      
+      dashboard.querySelectorAll('.grade-row').forEach(function (row) {
+        const searchVal = row.dataset.search || '';
+        if (!q || searchVal.includes(q)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    };
+    
+    window.downloadClassPdf = function (classCode, dashboardId) {
+      const dashboard = document.getElementById(dashboardId);
+      if (!dashboard) return;
+      
+      const wrapper = dashboard.querySelector('.grades-table-wrapper[data-class="' + classCode + '"]');
+      if (!wrapper) return;
+      
+      const printElement = document.createElement('div');
+      printElement.style.padding = '20px';
+      printElement.style.fontFamily = 'Arial, sans-serif';
+      printElement.style.color = '#333';
+      
+      const rows = Array.from(wrapper.querySelectorAll('.grade-row')).map(function (row) {
+        const td1 = row.cells[0].textContent;
+        const td2 = row.cells[1].textContent;
+        const td3 = row.cells[2].textContent;
+        const td4 = row.cells[3].textContent;
+        return '<tr>' +
+          '<td style="padding: 8px; border: 1px solid #ddd;">' + escapeHtml(td1) + '</td>' +
+          '<td style="padding: 8px; border: 1px solid #ddd;">' + escapeHtml(td2) + '</td>' +
+          '<td style="padding: 8px; border: 1px solid #ddd;">' + escapeHtml(td3) + '</td>' +
+          '<td style="padding: 8px; border: 1px solid #ddd;">' + escapeHtml(td4) + '</td>' +
+          '</tr>';
+      }).join('');
+      
+      printElement.innerHTML = [
+        '<h1 style="color: #2d6a4f; margin-bottom: 5px; font-size: 20px;">Pauta de Notas - Turma ' + escapeHtml(classCode) + '</h1>',
+        '<p style="font-size: 11px; color: #666; margin-bottom: 20px;">Gerado em: ' + new Date().toLocaleDateString('pt-PT') + '</p>',
+        '<table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">',
+        '<thead>',
+        '<tr style="background-color: #d4ede2; color: #2d6a4f;">',
+        '<th style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Número</th>',
+        '<th style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Nome</th>',
+        '<th style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Turma</th>',
+        '<th style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Nota/Detalhe</th>',
+        '</tr>',
+        '</thead>',
+        '<tbody>',
+        rows,
+        '</tbody>',
+        '</table>'
+      ].join('');
+      
+      const opt = {
+        margin: 10,
+        filename: 'Turma_' + classCode + '.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      window.html2pdf().set(opt).from(printElement).save();
+    };
+    
+    window.shareGradesDashboard = async function (dashboardId, button) {
+      if (button.disabled) return;
+      const originalText = button.innerHTML;
+      button.disabled = true;
+      button.innerHTML = 'A gerar link...';
+      
+      try {
+        const dataToShare = window.lastProcessedGrades;
+        if (!dataToShare) throw new Error('Não há dados para partilhar.');
+        
+        const blob = new Blob([JSON.stringify(dataToShare)], { type: 'application/json' });
+        const formData = new FormData();
+        formData.append('file', blob, 'grades_shared.json');
+        
+        const res = await fetch('https://tmpfiles.org/api/v1/upload', {
+          method: 'POST',
+          body: formData
+        });
+        if (!res.ok) throw new Error('Falha no upload do servidor de partilha.');
+        const resJson = await res.json();
+        
+        const uploadUrl = resJson.data.url;
+        const dlUrl = uploadUrl.replace('https://tmpfiles.org/', 'https://tmpfiles.org/dl/');
+        
+        const shareUrl = window.location.origin + window.location.pathname + '?grades=' + encodeURIComponent(dlUrl);
+        
+        let popup = document.getElementById('grades-share-popup');
+        if (!popup) {
+          popup = document.createElement('div');
+          popup.id = 'grades-share-popup';
+          popup.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); font-family: var(--font-body);';
+          document.body.appendChild(popup);
+        }
+        
+        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(shareUrl);
+        
+        popup.innerHTML = [
+          '<div style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius-lg); width: 90%; max-width: 440px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); text-align: center; position: relative;">',
+          '<button onclick="document.getElementById(\'grades-share-popup\').remove()" style="position: absolute; top: 10px; right: 10px; border: none; background: transparent; font-size: 1.2rem; cursor: pointer; color: var(--text-light);">&times;</button>',
+          '<h3 style="margin-bottom: 0.5rem; color: var(--text); font-size: 1.1rem; font-weight: 600;">Partilhar Pauta de Notas</h3>',
+          '<p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.2rem;">Qualquer pessoa com este link poderá ver a pauta interativa diretamente no site.</p>',
+          '<div style="margin-bottom: 1.2rem; display: flex; justify-content: center;">',
+          '<img src="' + qrUrl + '" alt="QR Code" style="border: 4px solid white; border-radius: var(--radius); box-shadow: var(--shadow-sm); width: 150px; height: 150px;" />',
+          '</div>',
+          '<div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">',
+          '<input type="text" id="share-link-input" value="' + shareUrl + '" readonly style="flex: 1; padding: 0.45rem 0.75rem; font-size: 0.78rem; border-radius: 6px; border: 1px solid var(--border); outline: none; background: var(--surface-2); color: var(--text);" />',
+          '<button onclick="window.copyShareLink()" class="btn btn--sm" style="padding: 0.45rem 0.9rem; font-size: 0.78rem; font-weight: 600; cursor: pointer;">Copiar</button>',
+          '</div>',
+          '<span id="share-copy-status" style="font-size: 0.7rem; color: var(--accent-mid); display: block; height: 15px; margin-top: 2px;"></span>',
+          '</div>'
+        ].join('');
+        
+        window.copyShareLink = function () {
+          const input = document.getElementById('share-link-input');
+          if (input) {
+            input.select();
+            navigator.clipboard.writeText(input.value);
+            const status = document.getElementById('share-copy-status');
+            if (status) status.textContent = 'Link copiado!';
+          }
+        };
+        
+      } catch (err) {
+        alert('Erro ao gerar link de partilha: ' + err.message);
+      } finally {
+        button.disabled = false;
+        button.innerHTML = originalText;
+      }
+    };
+  }
+
   function initLanguage() {
     const LOCALE_COPY = {
       pt: {
@@ -4926,6 +5904,13 @@
     renderResults();
     setProgress(0, 'Pronto para processar', 'Aguardando ação.');
     loadDynamicCobaltInstances();
+    
+    // Check for shared grades link
+    const params = new URLSearchParams(window.location.search);
+    const gradesUrl = params.get('grades');
+    if (gradesUrl) {
+      showSharedGrades(gradesUrl);
+    }
   }
 
   if (document.readyState === 'loading') {

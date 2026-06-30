@@ -799,13 +799,98 @@
     revealSyncTimer = window.setTimeout(syncVisibleCardReveals, 80);
   }
 
+  function showTipModal(cardEl) {
+    const title = cardEl.querySelector('.card-title') ? cardEl.querySelector('.card-title').textContent.trim() : '';
+    const desc = cardEl.querySelector('.card-desc') ? cardEl.querySelector('.card-desc').textContent.trim() : '';
+    const sourceEl = cardEl.querySelector('.card-source');
+    const sourceHref = sourceEl ? sourceEl.getAttribute('href') : cardEl.dataset.href;
+
+    const backdrop = document.getElementById('tipModalBackdrop');
+    const modal = document.getElementById('tipModal');
+    const modalTitle = document.getElementById('tipModalTitle');
+    const modalDesc = document.getElementById('tipModalDesc');
+    const sourceLink = document.getElementById('tipModalSourceLink');
+
+    if (!modal || !backdrop) return;
+
+    modalTitle.textContent = title;
+    modalDesc.textContent = desc;
+
+    if (sourceHref) {
+      sourceLink.href = sourceHref;
+      sourceLink.hidden = false;
+    } else {
+      sourceLink.hidden = true;
+    }
+
+    backdrop.hidden = false;
+    modal.hidden = false;
+    // Force reflow
+    modal.offsetHeight;
+    backdrop.offsetHeight;
+    backdrop.classList.add('modal-backdrop--visible');
+    modal.classList.add('tip-modal--visible');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeTipModal() {
+    const backdrop = document.getElementById('tipModalBackdrop');
+    const modal = document.getElementById('tipModal');
+    if (!modal || !backdrop) return;
+
+    backdrop.classList.remove('modal-backdrop--visible');
+    modal.classList.remove('tip-modal--visible');
+    document.body.style.overflow = '';
+
+    setTimeout(() => {
+      backdrop.hidden = true;
+      modal.hidden = true;
+    }, 250);
+  }
+
+  // Setup modal listeners
+  document.addEventListener('DOMContentLoaded', () => {
+    const closeBtn = document.getElementById('tipModalClose');
+    const backdrop = document.getElementById('tipModalBackdrop');
+    const copyBtn = document.getElementById('tipModalCopyBtn');
+
+    if (closeBtn) closeBtn.addEventListener('click', closeTipModal);
+    if (backdrop) backdrop.addEventListener('click', closeTipModal);
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const desc = document.getElementById('tipModalDesc').textContent;
+        navigator.clipboard.writeText(desc).then(() => {
+          const originalText = copyBtn.textContent;
+          copyBtn.textContent = 'Copiado!';
+          copyBtn.style.background = 'var(--accent-mid)';
+          setTimeout(() => {
+            copyBtn.textContent = originalText;
+            copyBtn.style.background = '';
+          }, 1500);
+        });
+      });
+    }
+  });
+
   function setupCardInteractions(cards) {
     cards.forEach((card) => {
       card.tabIndex = 0;
       card.setAttribute('role', 'link');
 
+      const sectionId = card.dataset.sec;
+      const title = card.querySelector('.card-title') ? card.querySelector('.card-title').textContent.trim() : '';
+      const desc = card.querySelector('.card-desc') ? card.querySelector('.card-desc').textContent.trim() : '';
+      const isPromptOrTip = ['prompts_e_diretorios', 'dicas_ia', 'dicas_pc', 'dicas_design'].includes(sectionId);
+      const isVideoTip = desc.toLowerCase().includes('vídeo') || desc.toLowerCase().includes('video') || title.toLowerCase().includes('canva') || title.toLowerCase().includes('pptx') || title.toLowerCase().includes('powerpoint') || title.toLowerCase().includes('capcut') || title.toLowerCase().includes('after effects');
+
       card.addEventListener('click', (event) => {
         if (event.target.closest('.card-source, .card-main-link')) return;
+
+        if (isPromptOrTip && !isVideoTip) {
+          event.preventDefault();
+          showTipModal(card);
+          return;
+        }
 
         if (card.dataset.expandable !== 'true') {
           if (!card.dataset.href) return;
@@ -839,6 +924,10 @@
         event.preventDefault();
 
         if (event.key === 'Enter') {
+          if (isPromptOrTip && !isVideoTip) {
+            showTipModal(card);
+            return;
+          }
           if (!card.dataset.href) return;
           window.open(card.dataset.href, '_blank', 'noopener');
           return;
