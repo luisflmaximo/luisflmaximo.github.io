@@ -4966,23 +4966,33 @@
     addResults(results);
   }
 
-  function uploadFileWithProgress(file, onProgress) {
+  async function gofileUpload(file, onProgress) {
+    // Step 1: get best server (gofile.io returns Access-Control-Allow-Origin: * on all endpoints)
+    const serversRes = await fetch('https://api.gofile.io/servers');
+    if (!serversRes.ok) throw new Error('Não foi possível obter servidor de upload.');
+    const serversJson = await serversRes.json();
+    const server = serversJson.data.servers[0].name;
+
+    // Step 2: upload with XHR so we can track progress
     return new Promise(function (resolve, reject) {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://file.io');
-      
+      xhr.open('POST', 'https://' + server + '.gofile.io/contents/uploadfile');
+
       xhr.upload.addEventListener('progress', function (e) {
-        if (e.lengthComputable) {
-          const percent = (e.loaded / e.total) * 100;
-          onProgress(percent);
+        if (e.lengthComputable && onProgress) {
+          onProgress((e.loaded / e.total) * 100);
         }
       });
-      
+
       xhr.onload = function () {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const res = JSON.parse(xhr.responseText);
-            resolve(res);
+            if (res.status === 'ok') {
+              resolve(res.data);
+            } else {
+              reject(new Error('Erro no servidor de upload.'));
+            }
           } catch (err) {
             reject(new Error('Resposta inválida do servidor.'));
           }
@@ -4990,11 +5000,11 @@
           reject(new Error('Falha no upload (status ' + xhr.status + ')'));
         }
       };
-      
+
       xhr.onerror = function () {
-        reject(new Error('Erro de rede.'));
+        reject(new Error('Erro de rede ao carregar ficheiro.'));
       };
-      
+
       const formData = new FormData();
       formData.append('file', file);
       xhr.send(formData);
@@ -5003,32 +5013,28 @@
 
   async function processFileShare(files, options) {
     const results = [];
-    
+
     for (let index = 0; index < files.length; index += 1) {
       const file = files[index];
       setProgress((index / files.length) * 100, 'A carregar ficheiro', file.name);
-      
+
       try {
-        const data = await uploadFileWithProgress(file, function (percent) {
+        const data = await gofileUpload(file, function (percent) {
           const overallPercent = ((index + (percent / 100)) / files.length) * 100;
           setProgress(overallPercent, 'A carregar ficheiro (' + Math.round(percent) + '%)', file.name);
         });
-        
-        if (data.success) {
-          results.push(createExternalResult(
-            file.name,
-            data.link,
-            'Link temporário ativo (válido para 1 download, expira em: ' + (data.expiry || '14 dias') + ')'
-          ));
-        } else {
-          throw new Error(data.message || 'Erro desconhecido ao carregar ficheiro.');
-        }
+
+        results.push(createExternalResult(
+          file.name,
+          data.downloadPage,
+          'Link de partilha gofile.io — temporário, válido enquanto o ficheiro tiver tráfego'
+        ));
       } catch (err) {
-        console.error('File.io upload failed:', err);
+        console.error('Gofile upload failed:', err);
         throw new Error('Erro ao carregar "' + file.name + '": ' + err.message);
       }
     }
-    
+
     addResults(results);
   }
 
@@ -5637,15 +5643,32 @@
     ]);
   }
 
-  async function showSharedGrades(binId) {
+  async function showSharedGrades(b64) {
     try {
       setActiveTool('student-grades');
-      setProgress(30, 'A carregar pauta partilhada...', 'A ler dados...');
-      
-      const gradesUrl = 'https://extendsclass.com/api/json-storage/bin/' + binId;
-      const res = await fetch(gradesUrl);
-      if (!res.ok) throw new Error('Não foi possível carregar a pauta.');
-      const data = await res.json();
+      setProgress(30, 'A carregar pauta partilhada...', 'A descomprimir dados...');
+
+      // Decode base64url back to bytes, then decompress with DecompressionStream
+      const binaryStr = atob(b64.replace(/-/g, '+').replace(/_/g, '/'));
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+
+      const ds = new DecompressionStream('deflate-raw');
+      const dsWriter = ds.writable.getWriter();
+      dsWriter.write(bytes);
+      dsWriter.close();
+      const chunks = [];
+      const dsReader = ds.readable.getReader();
+      while (true) {
+        const { done, value } = await dsReader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+      const totalLen = chunks.reduce(function (a, c) { return a + c.length; }, 0);
+      const combined = new Uint8Array(totalLen);
+      let off = 0;
+      chunks.forEach(function (c) { combined.set(c, off); off += c.length; });
+      const data = JSON.parse(new TextDecoder().decode(combined));
       
       if (!data || !data.detectedClasses || !data.grouped) {
         throw new Error('Dados de partilha inválidos.');
@@ -5836,22 +5859,35 @@
       const originalText = button.innerHTML;
       button.disabled = true;
       button.innerHTML = 'A gerar link...';
-      
+
       try {
         const dataToShare = window.lastProcessedGrades;
         if (!dataToShare) throw new Error('Não há dados para partilhar.');
-        
-        const res = await fetch('https://extendsclass.com/api/json-storage/bin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dataToShare)
-        });
-        if (!res.ok) throw new Error('Falha no upload do servidor de partilha.');
-        const resJson = await res.json();
-        const binId = resJson.id;
-        
-        const shareUrl = window.location.origin + window.location.pathname + '?grades=' + encodeURIComponent(binId);
-        
+
+        // Compress the grades JSON using the native CompressionStream API
+        // and encode as base64url. No external API needed - data lives in the URL fragment.
+        const jsonBytes = new TextEncoder().encode(JSON.stringify(dataToShare));
+        const cs = new CompressionStream('deflate-raw');
+        const writer = cs.writable.getWriter();
+        writer.write(jsonBytes);
+        writer.close();
+        const chunks = [];
+        const reader = cs.readable.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+        }
+        const totalLen = chunks.reduce(function (a, c) { return a + c.length; }, 0);
+        const combined = new Uint8Array(totalLen);
+        let offset = 0;
+        chunks.forEach(function (c) { combined.set(c, offset); offset += c.length; });
+        // Convert to base64url (safe for URL fragments)
+        const b64 = btoa(String.fromCharCode.apply(null, combined))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+        const shareUrl = window.location.origin + window.location.pathname + '#grades=' + b64;
+
         let popup = document.getElementById('grades-share-popup');
         if (!popup) {
           popup = document.createElement('div');
@@ -5859,14 +5895,14 @@
           popup.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); font-family: var(--font-body);';
           document.body.appendChild(popup);
         }
-        
+
         const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(shareUrl);
-        
+
         popup.innerHTML = [
-          '<div style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius-lg); width: 90%; max-width: 440px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); text-align: center; position: relative;">',
+          '<div style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius-lg); width: 90%; max-width: 480px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); text-align: center; position: relative;">',
           '<button onclick="document.getElementById(\'grades-share-popup\').remove()" style="position: absolute; top: 10px; right: 10px; border: none; background: transparent; font-size: 1.2rem; cursor: pointer; color: var(--text-light);">&times;</button>',
           '<h3 style="margin-bottom: 0.5rem; color: var(--text); font-size: 1.1rem; font-weight: 600;">Partilhar Pauta de Notas</h3>',
-          '<p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.2rem;">Qualquer pessoa com este link poderá ver a pauta interativa diretamente no site.</p>',
+          '<p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.2rem;">Qualquer pessoa com este link abre o site diretamente com as pautas por turma. Os dados estão embutidos no próprio link — sem servidores externos.</p>',
           '<div style="margin-bottom: 1.2rem; display: flex; justify-content: center;">',
           '<img src="' + qrUrl + '" alt="QR Code" style="border: 4px solid white; border-radius: var(--radius); box-shadow: var(--shadow-sm); width: 150px; height: 150px;" />',
           '</div>',
@@ -5877,7 +5913,7 @@
           '<span id="share-copy-status" style="font-size: 0.7rem; color: var(--accent-mid); display: block; height: 15px; margin-top: 2px;"></span>',
           '</div>'
         ].join('');
-        
+
         window.copyShareLink = function () {
           const input = document.getElementById('share-link-input');
           if (input) {
@@ -5887,7 +5923,7 @@
             if (status) status.textContent = 'Link copiado!';
           }
         };
-        
+
       } catch (err) {
         alert('Erro ao gerar link de partilha: ' + err.message);
       } finally {
@@ -6001,11 +6037,10 @@ function initLanguage() {
     setProgress(0, 'Pronto para processar', 'Aguardando ação.');
     loadDynamicCobaltInstances();
     
-    // Check for shared grades link
-    const params = new URLSearchParams(window.location.search);
-    const gradesUrl = params.get('grades');
-    if (gradesUrl) {
-      showSharedGrades(gradesUrl);
+    // Check for shared grades link in URL fragment (#grades=<compressed_base64>)
+    const hashMatch = window.location.hash.match(/^#grades=(.+)$/);
+    if (hashMatch) {
+      showSharedGrades(hashMatch[1]);
     }
   }
 
