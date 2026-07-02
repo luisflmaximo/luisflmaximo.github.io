@@ -20,7 +20,7 @@ O site é construído inteiramente em **HTML, CSS e JavaScript puros**, sem fram
 Página de apresentação com fotografia, dados de contacto, redes sociais e publicações recentes do LinkedIn. Inclui artigos e conteúdo sobre política, economia e participação cívica.
 
 ### Projetos
-Trabalhos académicos, análises de gestão e conteúdo produzido no âmbito do projeto **[Politiza-te](https://www.instagram.com/politizate_/)** — uma iniciativa de literacia política nas redes sociais. Inclui o acesso ao relatório de análise da **Super Bock** e documentos académicos em PDF.
+Trabalhos académicos, análises de gestão e conteúdo produzido no âmbito do projeto **[Politiza-te](https://www.instagram.com/politiza.te/)** — uma iniciativa de literacia política nas redes sociais. Inclui o acesso ao relatório de análise da **Super Bock** e documentos académicos em PDF.
 
 ### Currículo
 Percurso académico e experiências relevantes, com opção de download do CV em **português** (`CV_Luís_Máximo_PT.pdf`) e em **inglês** (`CV_Luís_Máximo_EN.pdf`).
@@ -46,7 +46,7 @@ Percurso académico e experiências relevantes, com opção de download do CV em
 Acessível de forma não pública, esta secção inclui um conjunto de utilitários pessoais:
 
 - **Catálogo de Ferramentas** — base de dados com mais de 2 150 recursos digitais organizados por categoria, com pesquisa e paginação incremental.
-- **Assistente IA** — chatbot multimodal (Gemini, via Cloudflare Worker) que recomenda recursos do catálogo. Suporta anexo e colagem de imagens.
+- **Assistente IA** — chatbot multimodal (Groq, via Cloudflare Worker) que recomenda recursos do catálogo. Suporta anexo e colagem de imagens.
 - **Estúdio de Multimédia** — ferramenta de gestão e download em lote de ficheiros, pastas e links.
 
 O proxy da API de IA corre num **Cloudflare Worker** (`/cloudflare/secret-ai/`), mantendo a chave de API segura no servidor.
@@ -87,7 +87,7 @@ portefolio/
 │   ├── tools-data.json             ← Base de dados do catálogo (~2 150 entradas)
 │   └── estudio/index.html
 └── cloudflare/
-    └── secret-ai/                  ← Cloudflare Worker (proxy Gemini API)
+    └── secret-ai/                  ← Cloudflare Worker (proxy Groq API)
         ├── worker.js
         └── wrangler.toml
 ```

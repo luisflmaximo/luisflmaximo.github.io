@@ -75,9 +75,10 @@
     if (!document.referrer) return false;
     try { return new URL(document.referrer).origin === window.location.origin; } catch (_) { return false; }
   })();
+  const isSecretPage = /\/secret(?:\/|$)/i.test(window.location.pathname || '');
 
   try {
-    if (!hasInternalReferrer) sessionStorage.removeItem('secretUnlocked');
+    if (!hasInternalReferrer && !isSecretPage) sessionStorage.removeItem('secretUnlocked');
     if (sessionStorage.getItem('secretUnlocked') === '1') showSecretTab();
   } catch (_) {}
 

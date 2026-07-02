@@ -757,7 +757,7 @@
   function showSetupMessage() {
     appendTextMessage('assistant',
       'O chat já está montado, mas ainda falta ligar o endpoint da IA.\n\n' +
-      'Para ativar isto tens só de publicar o Worker da Cloudflare, definir o segredo GEMINI_API_KEY e colar o URL final em assets/js/secret-ai-config.js.',
+      'Para ativar isto tens só de publicar o Worker da Cloudflare, definir o segredo GROQ_API_KEY e colar o URL final em assets/js/secret-ai-config.js.',
       { bubbleClassName: 'secret-ai__bubble--muted' });
   }
 

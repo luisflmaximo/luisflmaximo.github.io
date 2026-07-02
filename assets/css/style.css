@@ -22,13 +22,14 @@
   --border-light: #ECEAE4;
   --shadow-sm:    0 1px 4px rgba(26,28,20,0.07);
   --shadow:       0 4px 16px rgba(26,28,20,0.10);
+  --shadow-md:    0 8px 24px rgba(26,28,20,0.12);
   --shadow-lg:    0 12px 40px rgba(26,28,20,0.13);
   --radius:       6px;
   --radius-lg:    12px;
   --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-body:    'Outfit', system-ui, sans-serif;
   --nav-h:        70px;
-  --max-w:        1080px;
+  --max-w:        1240px;
   --transition:   0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -140,7 +141,7 @@ select:focus-visible,
   width: 100%;
   max-width: var(--max-w);
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 clamp(1rem, 2.2vw, 1.5rem);
 }
 .section {
   padding: 5rem 0;
@@ -173,7 +174,7 @@ select:focus-visible,
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 0 2rem;
+  padding: 0 clamp(1rem, 2.2vw, 1.5rem);
   max-width: var(--max-w);
   margin: 0 auto;
 }
@@ -799,14 +800,14 @@ select:focus-visible,
   -webkit-user-select: none;
   user-select: none;
   --viewer-zoom: 1;
-  --viewer-base-width: min(940px, calc(100vw - 4rem));
-  --viewer-page-width: min(940px, calc(100vw - 4rem));
+  --viewer-base-width: min(980px, calc(100vw - 2.5rem));
+  --viewer-page-width: min(980px, calc(100vw - 2.5rem));
 }
 .protected-viewer-page .container {
   max-width: 100%;
   width: 100%;
-  padding-left: clamp(0.75rem, 2vw, 1.5rem);
-  padding-right: clamp(0.75rem, 2vw, 1.5rem);
+  padding-left: clamp(0.5rem, 1.4vw, 1rem);
+  padding-right: clamp(0.5rem, 1.4vw, 1rem);
 }
 .protected-viewer {
   padding-top: 1.5rem;
@@ -994,7 +995,8 @@ select:focus-visible,
 
 @media (max-width: 768px) {
   .protected-viewer-page {
-    --viewer-base-width: calc(100vw - 2.5rem);
+    --viewer-base-width: calc(100vw - 1.5rem);
+    --viewer-page-width: calc(100vw - 1.5rem);
   }
   .protected-viewer {
     padding-top: 0.75rem;
@@ -1034,7 +1036,8 @@ select:focus-visible,
 
 @media (max-width: 480px) {
   .protected-viewer-page {
-    --viewer-base-width: calc(100vw - 1.5rem);
+    --viewer-base-width: calc(100vw - 1rem);
+    --viewer-page-width: calc(100vw - 1rem);
   }
   .protected-viewer__zoom {
     gap: 0.25rem;

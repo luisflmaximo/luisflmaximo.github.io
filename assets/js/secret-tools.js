@@ -1,10 +1,6 @@
 (function () {
   'use strict';
 
-  try {
-    sessionStorage.setItem('secretUnlocked', '1');
-  } catch (_) {}
-
   const DATA_URL = './tools-data.json';
   const LOCALE_STORAGE_KEY = 'secretPageLocale';
   const FALLBACK_FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f3ede2'/%3E%3Cpath d='M16 7a9 9 0 1 0 0 18a9 9 0 0 0 0-18Zm0 2a7 7 0 1 1 0 14a7 7 0 0 1 0-14Zm-1-1h2v2h-2zm0 14h2v2h-2zM8 15h2v2H8zm14 0h2v2h-2z' fill='%237b8c80'/%3E%3C/svg%3E";
@@ -132,6 +128,7 @@
     const copy = getLocaleCopy();
 
     document.title = copy.title;
+    document.documentElement.lang = state.locale;
 
     if (refs.metaDescription) refs.metaDescription.setAttribute('content', copy.metaDescription);
     if (refs.burger) refs.burger.setAttribute('aria-label', copy.burgerLabel);

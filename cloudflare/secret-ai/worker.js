@@ -42,14 +42,15 @@ export default {
       return jsonResponse({ error: 'Payload too large.' }, 413, corsOrigin);
     }
 
-    if (!env.GEMINI_API_KEY) {
-      return jsonResponse({ error: 'Missing GEMINI_API_KEY secret.' }, 500, corsOrigin);
+    const apiKey = env.GROQ_API_KEY;
+    if (!apiKey) {
+      return jsonResponse({ error: 'Missing GROQ_API_KEY secret.' }, 500, corsOrigin);
     }
 
     try {
       const payload = await request.json();
       const data = validatePayload(payload);
-      const result = await requestGroq(data, env);
+      const result = await requestGroq(data, env, apiKey);
       return jsonResponse(result, 200, corsOrigin);
     } catch (error) {
       const status = error && typeof error.status === 'number' ? error.status : 500;
@@ -287,7 +288,7 @@ function buildPrompt(data) {
   ].join('\n');
 }
 
-async function requestGroq(data, env) {
+async function requestGroq(data, env, apiKey) {
   let model;
   if (data.image) {
     model = String(env.GROQ_VISION_MODEL || DEFAULT_VISION_MODEL).trim() || DEFAULT_VISION_MODEL;
@@ -326,7 +327,7 @@ async function requestGroq(data, env) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + env.GEMINI_API_KEY,
+      'Authorization': 'Bearer ' + apiKey,
     },
     body: JSON.stringify({
       model: model,
@@ -403,7 +404,7 @@ function sanitizeModelResponse(parsed, candidates) {
         .slice(0, 6)
     : [];
 
-  // REMOVED FORCE-PADDING LOOP: only return recommendations explicitly made by Gemini!
+  // Removed force-padding: only return recommendations explicitly made by the model.
 
   const answer = clampText(normalizeEuropeanPortuguese(parsed && parsed.answer || ''), MAX_ANSWER_LENGTH) || (
     recommendations.length
