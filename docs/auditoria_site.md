@@ -23,6 +23,7 @@ Foram corrigidos ou mitigados os pontos mais urgentes que estavam a afetar estru
 - mitigado: acesso direto a area secret, com nova barreira client-side em `assets/js/secret-access.js`;
 - corrigido: configuracao da IA alinhada para Groq/GROQ_API_KEY, sem fallback antigo de outro fornecedor;
 - corrigido: conflito entre raiz `noindex` e sitemap, tornando a raiz indexavel e mantendo-a como `x-default` no `sitemap.xml`;
+- ajustado em 2026-07-03: nome completo `Luis Filipe Lopes Maximo` / `Luís Filipe Lopes Máximo` adicionado a metadados e JSON-LD sem aparecer no corpo visivel das paginas;
 - ajustado: espacos laterais globais e do visualizador PDF ficaram menores, mantendo containers centrados;
 - corrigido adicionalmente: `document.documentElement.lang` passa a acompanhar PT/EN na area secret;
 - corrigido adicionalmente: README deixou de apontar para o Instagram antigo do Politiza-te e deixou de descrever o Worker com fornecedor IA antigo.
