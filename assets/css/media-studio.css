@@ -732,13 +732,26 @@
 }
 
 @media (max-width: 640px) {
-  .tool-type-menu {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 6px;
+  .studio-hero__selector {
+    z-index: 220;
   }
-  .tool-type-menu::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+
+  .tool-type-menu {
+    flex-wrap: wrap;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .tool-type-item {
+    position: static;
+  }
+
+  .tool-type-submenu {
+    left: 0 !important;
+    right: 0 !important;
+    top: calc(100% + 0.5rem);
+    width: 100%;
+    max-width: none;
   }
 }
 
