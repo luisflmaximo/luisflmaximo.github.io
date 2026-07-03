@@ -5452,7 +5452,7 @@
       '<table style="width: 100%; border-collapse: collapse; font-size: 10.5px; text-align: left;">',
       '<thead>',
       '<tr style="background-color: #d4ede2; color: #2d6a4f;">',
-      '<th style="padding: 8px; border: 1px solid #d7ded9; font-weight: bold;">Numero</th>',
+      '<th style="padding: 8px; border: 1px solid #d7ded9; font-weight: bold;">Número</th>',
       '<th style="padding: 8px; border: 1px solid #d7ded9; font-weight: bold;">Nome</th>',
       '<th style="padding: 8px; border: 1px solid #d7ded9; font-weight: bold;">Turma</th>',
       '<th style="padding: 8px; border: 1px solid #d7ded9; font-weight: bold;">Nota/Detalhe</th>',
@@ -5469,7 +5469,7 @@
 
   async function createGradesPdfBlob(title, subtitle, students) {
     if (!window.html2pdf) {
-      throw new Error('O modulo html2pdf ainda nao carregou.');
+      throw new Error('O módulo html2pdf ainda não carregou.');
     }
 
     var printElement = createGradesPdfElement(title, subtitle, students);
@@ -5806,12 +5806,12 @@
       createBlobResult(
         'Pauta_Todas_as_Turmas.pdf',
         globalPdfBlob,
-        'PDF global com ' + allStudentsForPdf.length + ' correspondencias.'
+        'PDF global com ' + allStudentsForPdf.length + ' correspondências.'
       ),
       Object.assign(createBlobResult(
         'Pautas_por_Turma.zip',
         zipBlob,
-        'ZIP com um PDF por turma. Total: ' + allStudentsForPdf.length + ' correspondencias.'
+        'ZIP com um PDF por turma. Total: ' + allStudentsForPdf.length + ' correspondências.'
       ), {
         customHtml: finalHtml
       })
@@ -5976,60 +5976,6 @@
       });
     };
     
-    window.downloadClassPdf = function (classCode, dashboardId) {
-      const dashboard = document.getElementById(dashboardId);
-      if (!dashboard) return;
-      
-      const wrapper = dashboard.querySelector('.grades-table-wrapper[data-class="' + classCode + '"]');
-      if (!wrapper) return;
-      
-      const printElement = document.createElement('div');
-      printElement.style.padding = '20px';
-      printElement.style.fontFamily = 'Arial, sans-serif';
-      printElement.style.color = '#333';
-      
-      const rows = Array.from(wrapper.querySelectorAll('.grade-row')).map(function (row) {
-        const td1 = row.cells[0].textContent;
-        const td2 = row.cells[1].textContent;
-        const td3 = row.cells[2].textContent;
-        const td4 = row.cells[3].textContent;
-        return '<tr>' +
-          '<td style="padding: 8px; border: 1px solid #ddd;">' + escapeHtml(td1) + '</td>' +
-          '<td style="padding: 8px; border: 1px solid #ddd;">' + escapeHtml(td2) + '</td>' +
-          '<td style="padding: 8px; border: 1px solid #ddd;">' + escapeHtml(td3) + '</td>' +
-          '<td style="padding: 8px; border: 1px solid #ddd;">' + escapeHtml(td4) + '</td>' +
-          '</tr>';
-      }).join('');
-      
-      printElement.innerHTML = [
-        '<h1 style="color: #2d6a4f; margin-bottom: 5px; font-size: 20px;">Pauta de Notas - Turma ' + escapeHtml(classCode) + '</h1>',
-        '<p style="font-size: 11px; color: #666; margin-bottom: 20px;">Gerado em: ' + new Date().toLocaleDateString('pt-PT') + '</p>',
-        '<table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">',
-        '<thead>',
-        '<tr style="background-color: #d4ede2; color: #2d6a4f;">',
-        '<th style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Número</th>',
-        '<th style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Nome</th>',
-        '<th style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Turma</th>',
-        '<th style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Nota/Detalhe</th>',
-        '</tr>',
-        '</thead>',
-        '<tbody>',
-        rows,
-        '</tbody>',
-        '</table>'
-      ].join('');
-      
-      const opt = {
-        margin: 10,
-        filename: 'Turma_' + classCode + '.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-      
-      window.html2pdf().set(opt).from(printElement).save();
-    };
-    
     window.downloadGlobalGradesPdf = async function (dashboardId, button) {
       if (button && button.disabled) return;
       const dashboard = document.getElementById(dashboardId);
@@ -6043,7 +5989,7 @@
 
       try {
         const students = readGradeRowsFromDashboard(dashboard);
-        if (!students.length) throw new Error('Nao ha linhas para exportar.');
+        if (!students.length) throw new Error('Não há linhas para exportar.');
 
         const classes = Array.from(new Set(students.map(function (student) {
           return student.classCode;
@@ -6057,7 +6003,7 @@
         downloadBlob(blob, 'Pauta_Todas_as_Turmas.pdf');
       } catch (err) {
         console.error(err);
-        alert('Nao foi possivel gerar o PDF global: ' + err.message);
+        alert('Não foi possível gerar o PDF global: ' + err.message);
       } finally {
         if (button) {
           button.disabled = false;
@@ -6079,7 +6025,7 @@
 
       try {
         const students = readGradeRowsFromDashboard(dashboard, classCode);
-        if (!students.length) throw new Error('Nao ha linhas para exportar.');
+        if (!students.length) throw new Error('Não há linhas para exportar.');
 
         const blob = await createGradesPdfBlob(
           'Pauta de Notas - Turma ' + classCode,
@@ -6089,7 +6035,7 @@
         downloadBlob(blob, 'Turma_' + classCode + '.pdf');
       } catch (err) {
         console.error(err);
-        alert('Nao foi possivel gerar o PDF da turma: ' + err.message);
+        alert('Não foi possível gerar o PDF da turma: ' + err.message);
       } finally {
         if (button) {
           button.disabled = false;

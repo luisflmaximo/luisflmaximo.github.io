@@ -740,18 +740,6 @@
     overflow: visible;
     padding-bottom: 0;
   }
-
-  .tool-type-item {
-    position: static;
-  }
-
-  .tool-type-submenu {
-    left: 0 !important;
-    right: 0 !important;
-    top: calc(100% + 0.5rem);
-    width: 100%;
-    max-width: none;
-  }
 }
 
 .tool-type-item {
@@ -840,6 +828,21 @@
   transform: translateY(0) scale(1);
   pointer-events: auto;
   transition-delay: 0s;
+}
+
+@media (max-width: 640px) {
+  .tool-type-item {
+    position: static;
+  }
+
+  .tool-type-submenu {
+    left: 0 !important;
+    right: 0 !important;
+    top: calc(100% + 0.5rem);
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+  }
 }
 
 .tool-type-submenu-header {

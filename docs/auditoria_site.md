@@ -1,6 +1,6 @@
 # Auditoria do site
 
-Data: 2026-07-02  
+Data: 2026-07-03  
 Projeto: portfolio pessoal de Luis Maximo
 
 ## Notas de escopo
@@ -13,7 +13,7 @@ Esta auditoria olha para desktop e mobile, mas sem sugerir como prioridade tres 
 
 Tambem tentei validar visualmente no browser integrado, mas a navegacao para o servidor local foi bloqueada por politica de URL. Por isso, esta auditoria baseia-se em leitura do HTML/CSS/JS, validacoes locais de links/assets/metadados e analise responsive pelas regras CSS existentes. Vale a pena fazer uma ultima passagem manual em Chrome/Safari/telemovel real antes de publicar alteracoes.
 
-## Estado apos correcoes de 2026-07-02
+## Estado apos correcoes de 2026-07-03
 
 Foram corrigidos ou mitigados os pontos mais urgentes que estavam a afetar estrutura, manutencao e experiencia em desktop/mobile:
 
@@ -24,6 +24,9 @@ Foram corrigidos ou mitigados os pontos mais urgentes que estavam a afetar estru
 - corrigido: configuracao da IA alinhada para Groq/GROQ_API_KEY, sem fallback antigo de outro fornecedor;
 - corrigido: conflito entre raiz `noindex` e sitemap, tornando a raiz indexavel e mantendo-a como `x-default` no `sitemap.xml`;
 - ajustado em 2026-07-03: nome completo `Luis Filipe Lopes Maximo` / `Luís Filipe Lopes Máximo` adicionado a metadados e JSON-LD sem aparecer no corpo visivel das paginas;
+- corrigido em 2026-07-03: menu de ferramentas do Estudio passa a abrir submenus por toque em smartphone, com dropdown visivel em mobile;
+- corrigido em 2026-07-03: separador de notas por turma passa a gerar um PDF global e um ZIP com PDFs por turma;
+- corrigido em 2026-07-03: PDFs de pautas deixaram de ser gerados a partir de um elemento solto em memoria, evitando ficheiros em branco em browsers mais exigentes;
 - ajustado: espacos laterais globais e do visualizador PDF ficaram menores, mantendo containers centrados;
 - corrigido adicionalmente: `document.documentElement.lang` passa a acompanhar PT/EN na area secret;
 - corrigido adicionalmente: README deixou de apontar para o Instagram antigo do Politiza-te e deixou de descrever o Worker com fornecedor IA antigo.
@@ -496,6 +499,8 @@ Ficheiros:
 - `assets/js/media-studio.js`
 
 Risco: o Estudio e bastante poderoso, mas trabalha com canvas, PDF, FFmpeg, ZIP e ficheiros grandes diretamente no browser. Em mobile isto pode ficar lento ou falhar por memoria.
+
+Estado apos alteracao em 2026-07-03: corrigida a selecao de ferramentas em smartphone. O botao de categoria passou a abrir/fechar o submenu por toque, o dropdown deixou de ficar cortado pelo scroll horizontal e `aria-expanded` passa a refletir o estado aberto/fechado. No separador de notas por turma, a exportacao passou a entregar `Pauta_Todas_as_Turmas.pdf` e `Pautas_por_Turma.zip`, com um PDF por turma dentro do ZIP. A geracao de PDFs agora anexa temporariamente o conteudo fora do ecra antes de chamar `html2pdf`, reduzindo o risco de ficheiros em branco.
 
 Sugestoes:
 
