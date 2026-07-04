@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <urlset
   xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://luisflmaximo.github.io/portefolio/</loc>
-    <lastmod>2026-07-03</lastmod>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="pt" href="https://luisflmaximo.github.io/portefolio/pt/" />
@@ -14,7 +14,7 @@
   </url>
   <url>
     <loc>https://luisflmaximo.github.io/portefolio/pt/</loc>
-    <lastmod>2026-07-03</lastmod>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <xhtml:link rel="alternate" hreflang="pt" href="https://luisflmaximo.github.io/portefolio/pt/" />
@@ -24,7 +24,7 @@
   </url>
   <url>
     <loc>https://luisflmaximo.github.io/portefolio/en/</loc>
-    <lastmod>2026-07-03</lastmod>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luisflmaximo.github.io/portefolio/en/" />
@@ -34,7 +34,7 @@
   </url>
   <url>
     <loc>https://luisflmaximo.github.io/portefolio/es/</loc>
-    <lastmod>2026-07-03</lastmod>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <xhtml:link rel="alternate" hreflang="es" href="https://luisflmaximo.github.io/portefolio/es/" />
@@ -44,7 +44,7 @@
   </url>
   <url>
     <loc>https://luisflmaximo.github.io/portefolio/pt/projetos/</loc>
-    <lastmod>2026-07-03</lastmod>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="pt" href="https://luisflmaximo.github.io/portefolio/pt/projetos/" />
@@ -54,7 +54,7 @@
   </url>
   <url>
     <loc>https://luisflmaximo.github.io/portefolio/en/projects/</loc>
-    <lastmod>2026-07-03</lastmod>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luisflmaximo.github.io/portefolio/en/projects/" />
@@ -64,7 +64,7 @@
   </url>
   <url>
     <loc>https://luisflmaximo.github.io/portefolio/es/proyectos/</loc>
-    <lastmod>2026-07-03</lastmod>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="es" href="https://luisflmaximo.github.io/portefolio/es/proyectos/" />
@@ -74,7 +74,7 @@
   </url>
   <url>
     <loc>https://luisflmaximo.github.io/portefolio/pt/curriculo/</loc>
-    <lastmod>2026-07-03</lastmod>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="pt" href="https://luisflmaximo.github.io/portefolio/pt/curriculo/" />
@@ -84,7 +84,7 @@
   </url>
   <url>
     <loc>https://luisflmaximo.github.io/portefolio/en/curriculum/</loc>
-    <lastmod>2026-07-03</lastmod>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luisflmaximo.github.io/portefolio/en/curriculum/" />
@@ -94,7 +94,7 @@
   </url>
   <url>
     <loc>https://luisflmaximo.github.io/portefolio/es/curriculum/</loc>
-    <lastmod>2026-07-03</lastmod>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="es" href="https://luisflmaximo.github.io/portefolio/es/curriculum/" />
@@ -102,4 +102,11 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://luisflmaximo.github.io/portefolio/en/curriculum/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://luisflmaximo.github.io/portefolio/pt/curriculo/" />
   </url>
+  <url>
+    <loc>https://luisflmaximo.github.io/portefolio/docs/superbock-viewer.html</loc>
+    <lastmod>2026-07-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>
+
