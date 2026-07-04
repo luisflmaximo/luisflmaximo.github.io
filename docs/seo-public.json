@@ -1,0 +1,60 @@
+{
+  "siteName": "Luis Filipe Lopes Maximo",
+  "baseUrl": "https://luisflmaximo.github.io/portefolio/",
+  "person": {
+    "name": "Luis Filipe Lopes Maximo",
+    "displayName": "Luis Maximo",
+    "alternateNames": [
+      "Luis Maximo",
+      "Luis Filipe Lopes Maximo"
+    ],
+    "sameAs": [
+      "https://www.linkedin.com/in/luisflmaximo/",
+      "https://www.instagram.com/luisflmaximo/",
+      "https://x.com/luisflmaximo",
+      "https://www.facebook.com/luisflmaximo"
+    ]
+  },
+  "languages": {
+    "pt": "pt-PT",
+    "en": "en-US",
+    "es": "es-ES"
+  },
+  "socialImages": {
+    "pt": "assets/images/banner-social-pt.jpg",
+    "en": "assets/images/banner-social-en.jpg",
+    "es": "assets/images/banner-social-es.jpg"
+  },
+  "pages": [
+    {
+      "id": "home",
+      "priority": 0.9,
+      "alternates": {
+        "pt": "pt/",
+        "en": "en/",
+        "es": "es/",
+        "xDefault": ""
+      }
+    },
+    {
+      "id": "projects",
+      "priority": 0.8,
+      "alternates": {
+        "pt": "pt/projetos/",
+        "en": "en/projects/",
+        "es": "es/proyectos/",
+        "xDefault": "pt/projetos/"
+      }
+    },
+    {
+      "id": "curriculum",
+      "priority": 0.8,
+      "alternates": {
+        "pt": "pt/curriculo/",
+        "en": "en/curriculum/",
+        "es": "es/curriculum/",
+        "xDefault": "pt/curriculo/"
+      }
+    }
+  ]
+}

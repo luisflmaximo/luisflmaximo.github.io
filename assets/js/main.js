@@ -42,7 +42,7 @@
   document.querySelectorAll('.nav__lang a.nav__lang-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const href = btn.getAttribute('href') || '';
-      const lang = (href.includes('/en/') || href.endsWith('/en')) ? 'en' : 'pt';
+      const lang = (href.includes('/es/') || href.endsWith('/es')) ? 'es' : ((href.includes('/en/') || href.endsWith('/en')) ? 'en' : 'pt');
       try { localStorage.setItem('lang-pref', lang); } catch (_) {}
     });
   });
@@ -56,8 +56,6 @@
       if (count === 7) {
         count = 0;
         clearTimeout(timer);
-        try { sessionStorage.setItem('secretUnlocked', '1'); } catch (_) {}
-        showSecretTab();
         window.location.href = new URL('../secret/', window.location.href).toString();
         return;
       }
@@ -66,21 +64,6 @@
     };
     profilePhoto.addEventListener('click', handleTap);
   }
-
-  function showSecretTab() {
-    document.querySelectorAll('.nav__secret-link').forEach((el) => { el.removeAttribute('hidden'); });
-  }
-
-  const hasInternalReferrer = (() => {
-    if (!document.referrer) return false;
-    try { return new URL(document.referrer).origin === window.location.origin; } catch (_) { return false; }
-  })();
-  const isSecretPage = /\/secret(?:\/|$)/i.test(window.location.pathname || '');
-
-  try {
-    if (!hasInternalReferrer && !isSecretPage) sessionStorage.removeItem('secretUnlocked');
-    if (sessionStorage.getItem('secretUnlocked') === '1') showSecretTab();
-  } catch (_) {}
 
   /* ── Reveal on scroll ── */
   const reveals = document.querySelectorAll('.reveal');
@@ -151,6 +134,7 @@
   const linkedinProfilePanels = Array.from(document.querySelectorAll('[data-linkedin-profile-panel]'));
   const linkedinFrames        = Array.from(document.querySelectorAll('.linkedin-post-card__frame'));
   const LINKEDIN_BADGE_SCRIPT = 'https://platform.linkedin.com/badges/js/profile.js';
+  const SHOULD_LOAD_LINKEDIN_EMBEDS = false;
 
   if (linkedinSection || linkedinFrames.length) {
     const isTopLevelContext = (() => {
@@ -242,6 +226,11 @@
       linkedinEmbedsLoaded = true;
 
       if (!isTopLevelContext) {
+        activateLinkedinFallback();
+        return;
+      }
+
+      if (!SHOULD_LOAD_LINKEDIN_EMBEDS) {
         activateLinkedinFallback();
         return;
       }

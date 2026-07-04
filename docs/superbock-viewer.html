@@ -3,9 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="description" content="Visualizador do projeto academico Mega Caixa Super Bock 100 Anos de Cerveja, plano de marketing finalizado em maio de 2026.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Mega Caixa Super Bock 100 Anos de Cerveja</title>
+  <link rel="canonical" href="https://luisflmaximo.github.io/portefolio/docs/superbock-viewer.html">
+  <meta property="og:locale" content="pt_PT">
+  <meta property="og:site_name" content="Luís Máximo">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Mega Caixa Super Bock 100 Anos de Cerveja">
+  <meta property="og:description" content="Visualizador do projeto academico Mega Caixa Super Bock 100 Anos de Cerveja, plano de marketing finalizado em maio de 2026.">
+  <meta property="og:url" content="https://luisflmaximo.github.io/portefolio/docs/superbock-viewer.html">
+  <meta property="og:image" content="https://luisflmaximo.github.io/portefolio/assets/images/banner-social-pt.jpg">
+  <meta property="og:image:secure_url" content="https://luisflmaximo.github.io/portefolio/assets/images/banner-social-pt.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="633">
+  <meta property="og:image:alt" content="Projeto Mega Caixa Super Bock 100 Anos de Cerveja">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Mega Caixa Super Bock 100 Anos de Cerveja">
+  <meta name="twitter:description" content="Visualizador do projeto academico Mega Caixa Super Bock 100 Anos de Cerveja.">
+  <meta name="twitter:image" content="https://luisflmaximo.github.io/portefolio/assets/images/banner-social-pt.jpg">
   <link rel="icon" href="../assets/images/icon.png" type="image/png">
   <link rel="stylesheet" href="../assets/css/style.css">
 </head>
@@ -37,7 +55,7 @@
     </div>
 
     <p class="protected-viewer__notice" data-i18n="notice">
-      Visualiza&ccedil;&atilde;o protegida: o documento &eacute; apresentado como imagens para impedir a c&oacute;pia do texto original. As fun&ccedil;&otilde;es de impress&atilde;o, grava&ccedil;&atilde;o e menu de contexto est&atilde;o bloqueadas nesta p&aacute;gina.
+      Visualiza&ccedil;&atilde;o em imagens: o documento &eacute; apresentado p&aacute;gina a p&aacute;gina para dificultar a c&oacute;pia direta do texto. Impress&atilde;o, grava&ccedil;&atilde;o e menu de contexto est&atilde;o bloqueados nesta p&aacute;gina.
     </p>
 
     <div class="protected-viewer__stage" id="viewerStage">
@@ -50,7 +68,8 @@
   (function () {
     var pageCount = 71;
     var params = new URLSearchParams(window.location.search);
-    var lang = params.get('lang') === 'en' ? 'en' : 'pt';
+    var requestedLang = params.get('lang');
+    var lang = requestedLang === 'en' || requestedLang === 'es' ? requestedLang : 'pt';
     var copy = {
       pt: {
         label: 'Projeto acad\u00e9mico',
@@ -58,7 +77,7 @@
         meta: 'Plano de Marketing - finalizado em maio de 2026',
         back: 'Voltar',
         fit: 'Ajustar',
-        notice: 'Visualiza\u00e7\u00e3o protegida: o documento \u00e9 apresentado como imagens para impedir a c\u00f3pia do texto original. As fun\u00e7\u00f5es de impress\u00e3o, grava\u00e7\u00e3o e menu de contexto est\u00e3o bloqueadas nesta p\u00e1gina.',
+        notice: 'Visualiza\u00e7\u00e3o em imagens: o documento \u00e9 apresentado p\u00e1gina a p\u00e1gina para dificultar a c\u00f3pia direta do texto. Impress\u00e3o, grava\u00e7\u00e3o e menu de contexto est\u00e3o bloqueados nesta p\u00e1gina.',
         print: 'A impress\u00e3o est\u00e1 desativada para este documento.',
         backHref: '../pt/projetos/'
       },
@@ -68,9 +87,19 @@
         meta: 'Marketing Plan - finalized in May 2026',
         back: 'Back',
         fit: 'Fit',
-        notice: 'Protected viewing: the document is displayed as images to prevent copying the original text. Print, save and context-menu actions are blocked on this page.',
+        notice: 'Image-based viewing: the document is shown page by page to make direct text copying harder. Print, save and context-menu actions are blocked on this page.',
         print: 'Printing is disabled for this document.',
         backHref: '../en/projects/'
+      },
+      es: {
+        label: 'Proyecto academico',
+        title: 'Mega Caixa Super Bock 100 Anos de Cerveja',
+        meta: 'Plan de Marketing - finalizado en mayo de 2026',
+        back: 'Volver',
+        fit: 'Ajustar',
+        notice: 'Visualizacion en imagenes: el documento se muestra pagina a pagina para dificultar la copia directa del texto. Las acciones de impresion, guardado y menu contextual estan bloqueadas en esta pagina.',
+        print: 'La impresion esta desactivada para este documento.',
+        backHref: '../es/proyectos/'
       }
     };
 
@@ -86,6 +115,27 @@
     document.querySelector('.protected-viewer__print-message').textContent = copy[lang].print;
 
     var pages = document.getElementById('protectedPages');
+    var pageObserver = 'IntersectionObserver' in window
+      ? new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            var image = entry.target.querySelector('img[data-src]');
+            if (image) loadPageImage(image);
+            pageObserver.unobserve(entry.target);
+          });
+        }, { rootMargin: '900px 0px 1200px', threshold: 0.01 })
+      : null;
+
+    function loadPageImage(img) {
+      if (!img || !img.dataset.src) return;
+      img.src = img.dataset.src;
+      img.removeAttribute('data-src');
+      if (img.complete && img.naturalWidth) {
+        img.classList.add('loaded');
+        img.parentElement.classList.add('loaded');
+      }
+    }
+
     for (var i = 1; i <= pageCount; i += 1) {
       var figure = document.createElement('figure');
       var img = document.createElement('img');
@@ -102,15 +152,16 @@
         this.parentElement.classList.add('loaded');
       };
       
-      img.src = 'superbock-pages/page-' + pageNumber + '.webp';
-      
-      if (img.complete) {
-        img.classList.add('loaded');
-        figure.classList.add('loaded');
-      }
+      img.dataset.src = 'superbock-pages/page-' + pageNumber + '.webp';
       
       figure.appendChild(img);
       pages.appendChild(figure);
+
+      if (i <= 2 || !pageObserver) {
+        loadPageImage(img);
+      } else {
+        pageObserver.observe(figure);
+      }
     }
 
     var zoomRange = document.getElementById('zoomRange');
@@ -125,7 +176,7 @@
     }
 
     function getBasePageWidth() {
-      var viewportPadding = window.matchMedia('(max-width: 480px)').matches ? 24 : window.matchMedia('(max-width: 768px)').matches ? 40 : 64;
+      var viewportPadding = window.matchMedia('(max-width: 480px)').matches ? 8 : window.matchMedia('(max-width: 768px)').matches ? 12 : 18;
       return Math.min(940, Math.max(260, window.innerWidth - viewportPadding));
     }
 

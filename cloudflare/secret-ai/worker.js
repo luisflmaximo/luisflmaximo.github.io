@@ -5,8 +5,10 @@ const MAX_CANDIDATES = 30;
 const MAX_BADGES = 5;
 const MAX_ANSWER_LENGTH = 500;
 const MAX_REASON_LENGTH = 320; // Increased to prevent cut off reasoning sentences
+const DAILY_AI_REQUEST_LIMIT = 40;
 const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
 const DEFAULT_VISION_MODEL = 'llama-3.2-11b-vision-preview';
+const memoryRateLimits = new Map();
 
 export default {
   async fetch(request, env) {
@@ -50,8 +52,19 @@ export default {
     try {
       const payload = await request.json();
       const data = validatePayload(payload);
+      const rateLimit = await checkDailyRateLimit(request, env);
+
+      if (!rateLimit.allowed) {
+        return jsonResponse({
+          error: 'Limite diario de 40 pedidos atingido. Tenta novamente amanha.',
+          limit: rateLimit.limit,
+          remaining: 0,
+          resetAt: rateLimit.resetAt,
+        }, 429, corsOrigin, buildRateLimitHeaders(rateLimit));
+      }
+
       const result = await requestGroq(data, env, apiKey);
-      return jsonResponse(result, 200, corsOrigin);
+      return jsonResponse(result, 200, corsOrigin, buildRateLimitHeaders(rateLimit));
     } catch (error) {
       const status = error && typeof error.status === 'number' ? error.status : 500;
       const message = error && error.message ? error.message : 'Unexpected server error.';
@@ -102,12 +115,13 @@ function buildCorsHeaders(corsOrigin) {
   return headers;
 }
 
-function jsonResponse(body, status, corsOrigin) {
+function jsonResponse(body, status, corsOrigin, extraHeaders) {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
       'Content-Type': 'application/json; charset=UTF-8',
       ...buildCorsHeaders(corsOrigin),
+      ...(extraHeaders || {}),
     },
   });
 }
@@ -122,6 +136,69 @@ function clampText(value, maxLength) {
   const text = String(value || '').trim();
   if (text.length <= maxLength) return text;
   return text.slice(0, Math.max(0, maxLength - 1)).trim() + '…';
+}
+
+async function checkDailyRateLimit(request, env) {
+  const limit = Math.max(1, Number(env.DAILY_AI_REQUEST_LIMIT || DAILY_AI_REQUEST_LIMIT) || DAILY_AI_REQUEST_LIMIT);
+  const now = new Date();
+  const resetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  const resetAt = resetDate.toISOString();
+  const ttl = Math.max(60, Math.ceil((resetDate.getTime() - now.getTime()) / 1000));
+  const key = 'daily:' + now.toISOString().slice(0, 10) + ':' + await getClientHash(request);
+  const kv = env.SECRET_AI_RATE_LIMIT || env.RATE_LIMIT_KV || null;
+
+  if (kv && typeof kv.get === 'function' && typeof kv.put === 'function') {
+    const current = Number(await kv.get(key) || 0) || 0;
+    if (current >= limit) {
+      return { allowed: false, limit, remaining: 0, resetAt };
+    }
+
+    const next = current + 1;
+    await kv.put(key, String(next), { expirationTtl: ttl + 300 });
+    return { allowed: true, limit, remaining: Math.max(0, limit - next), resetAt };
+  }
+
+  pruneMemoryRateLimits(now.getTime());
+  const current = memoryRateLimits.get(key);
+  const used = current && current.expiresAt > now.getTime() ? current.count : 0;
+
+  if (used >= limit) {
+    return { allowed: false, limit, remaining: 0, resetAt };
+  }
+
+  const next = used + 1;
+  memoryRateLimits.set(key, { count: next, expiresAt: resetDate.getTime() });
+  return { allowed: true, limit, remaining: Math.max(0, limit - next), resetAt };
+}
+
+function pruneMemoryRateLimits(nowMs) {
+  if (memoryRateLimits.size < 500) return;
+  memoryRateLimits.forEach((value, key) => {
+    if (!value || value.expiresAt <= nowMs) {
+      memoryRateLimits.delete(key);
+    }
+  });
+}
+
+async function getClientHash(request) {
+  const ip = request.headers.get('CF-Connecting-IP') ||
+    (request.headers.get('X-Forwarded-For') || '').split(',')[0].trim() ||
+    'local';
+  const ua = request.headers.get('User-Agent') || '';
+  const raw = ip + '|' + ua;
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+  const bytes = Array.from(new Uint8Array(digest));
+  return bytes.map((byte) => byte.toString(16).padStart(2, '0')).join('').slice(0, 32);
+}
+
+function buildRateLimitHeaders(rateLimit) {
+  if (!rateLimit) return {};
+
+  return {
+    'X-RateLimit-Limit': String(rateLimit.limit),
+    'X-RateLimit-Remaining': String(rateLimit.remaining),
+    'X-RateLimit-Reset': rateLimit.resetAt,
+  };
 }
 
 function validateShortText(value, fieldName, maxLength, required) {

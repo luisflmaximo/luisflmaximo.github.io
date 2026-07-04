@@ -4,7 +4,7 @@
   const config = Object.assign({
     enabled: true,
     endpoint: '',
-    model: 'gemini-3.1-flash-lite-preview',
+    model: 'llama-3.3-70b-versatile',
   }, window.SECRET_AI_CONFIG || {});
 
   if (!config.enabled) return;

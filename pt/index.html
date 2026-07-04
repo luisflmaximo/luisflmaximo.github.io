@@ -12,11 +12,13 @@
   <link rel="canonical" href="https://luisflmaximo.github.io/portefolio/pt/">
   <link rel="alternate" hreflang="pt" href="https://luisflmaximo.github.io/portefolio/pt/">
   <link rel="alternate" hreflang="en" href="https://luisflmaximo.github.io/portefolio/en/">
+  <link rel="alternate" hreflang="es" href="https://luisflmaximo.github.io/portefolio/es/">
   <link rel="alternate" hreflang="x-default" href="https://luisflmaximo.github.io/portefolio/">
   <meta property="og:site_name" content="Luís Filipe Lopes Máximo">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="pt_PT">
   <meta property="og:locale:alternate" content="en_US">
+  <meta property="og:locale:alternate" content="es_ES">
   <meta property="og:title" content="Luís Máximo">
   <meta property="og:description" content="Site oficial de Luís Filipe Lopes Máximo, estudante de Gestão na ISCTE Business School. Conhece o meu percurso, currículo, projetos académicos e Politiza-te.">
   <meta property="og:url" content="https://luisflmaximo.github.io/portefolio/pt/">
@@ -56,7 +58,6 @@
           "image": "https://luisflmaximo.github.io/portefolio/assets/images/profile.jpg",
           "jobTitle": "Estudante de Gestão",
           "email": "mailto:luisflmaximo8@gmail.com",
-          "telephone": "+351933869786",
           "address": {
             "@type": "PostalAddress",
             "addressLocality": "Loures",
@@ -82,7 +83,8 @@
           "name": "Luís Filipe Lopes Máximo",
           "inLanguage": [
             "pt-PT",
-            "en-US"
+            "en-US",
+            "es-ES"
           ],
           "publisher": {
             "@id": "https://luisflmaximo.github.io/portefolio/#person"
@@ -151,12 +153,13 @@
       <a href="./" class="nav__link nav__link--active">Início</a>
       <a href="projetos/" class="nav__link">Projetos</a>
       <a href="curriculo/" class="nav__link">Currículo</a>
-      <a href="../secret/" class="nav__link nav__secret-link" hidden>Ferramentas</a>
+      <a href="../secret/" class="nav__link nav__secret-link">Ferramentas</a>
     </div>
     <div class="nav__right">
       <div class="nav__lang">
         <span class="nav__lang-btn nav__lang-btn--active" aria-current="true" aria-label="Current language: Portuguese">PT</span>
         <a href="../en/" class="nav__lang-btn">EN</a>
+        <a href="../es/" class="nav__lang-btn">ES</a>
       </div>
       <button class="nav__burger" id="navBurger" aria-label="Abrir menu" aria-expanded="false">
         <span></span><span></span><span></span>
@@ -170,7 +173,7 @@
     <div class="container">
       <div class="hero__inner">
         <div class="hero__photo-wrap">
-          <img src="../assets/images/profile.jpg" alt="Fotografia de Luís Máximo" class="hero__photo" id="profilePhoto" draggable="false" width="2000" height="1996">
+          <img src="../assets/images/profile-640.webp" srcset="../assets/images/profile-320.webp 320w, ../assets/images/profile-640.webp 640w, ../assets/images/profile-1200.webp 1200w, ../assets/images/profile.jpg 2000w" sizes="(max-width: 768px) 48vw, 260px" alt="Fotografia de Luís Máximo" class="hero__photo" id="profilePhoto" draggable="false" width="2000" height="1996">
         </div>
         <div class="hero__content">
           <p class="label hero__label">Portefólio &amp; Currículo</p>
@@ -199,6 +202,10 @@
                 <a href="mailto:luisflmaximo8@gmail.com" class="link--accent">luisflmaximo8@gmail.com</a>
               </p>
             </div>
+          </div>
+          <div class="hero__actions" aria-label="Ações principais">
+            <a href="projetos/" class="btn btn--primary">Ver projetos</a>
+            <a href="curriculo/" class="btn btn--outline">Ver currículo</a>
           </div>
           <div class="hero__socials">
             <a href="https://www.linkedin.com/in/luisflmaximo/" target="_blank" rel="noopener noreferrer" class="hero__social-link">
@@ -260,7 +267,7 @@
                 <svg viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
               </div>
               <p class="linkedin-embed-fallback__title">Publicação no LinkedIn</p>
-              <p class="linkedin-embed-fallback__msg">Este conteúdo foi bloqueado pelo teu adblocker. Podes ver a publicação diretamente no LinkedIn.</p>
+              <p class="linkedin-embed-fallback__msg">Evitei carregar este embed para não mostrar avisos de cookies do LinkedIn. Podes ver a publicação diretamente no LinkedIn.</p>
               <a href="https://www.linkedin.com/feed/update/urn:li:ugcPost:7444481713419767808/" target="_blank" rel="noopener noreferrer" class="btn btn--outline btn--fallback-cta">Ver no LinkedIn →</a>
             </div>
           </article>
@@ -287,7 +294,7 @@
             </div>
 
             <div class="linkedin-badge-fallback" aria-hidden="true">
-              <p class="linkedin-badge-fallback__text">Perfil bloqueado pelo adblocker.<br>
+              <p class="linkedin-badge-fallback__text">Embed do perfil bloqueado para evitar avisos de cookies.<br>
               <a href="https://www.linkedin.com/in/luisflmaximo/" target="_blank" rel="noopener noreferrer">Ver perfil no LinkedIn →</a></p>
             </div>
 

@@ -102,6 +102,7 @@
 
   let revealSyncTimer = null;
   let filterTimer = null;
+  let searchFrame = 0;
   let autoLoadFrame = 0;
 
   function getStoredLocale() {
@@ -328,14 +329,21 @@
 
   function buildSearchText(card, source) {
     const provided = toText(card.search).trim();
-    if (provided) return provided.toLowerCase();
+    if (provided) return normalizeSearchValue(provided);
 
-    return [
+    return normalizeSearchValue([
       card.title,
       card.domain,
       card.desc,
       source ? source.label : '',
-    ].join(' ').toLowerCase().trim();
+    ].join(' '));
+  }
+
+  function normalizeSearchValue(value) {
+    const text = toText(value).toLowerCase().trim();
+    if (!text) return '';
+    if (typeof text.normalize !== 'function') return text;
+    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
 
   function createAiId(categoryId, sectionId, cardIndex) {
@@ -350,7 +358,10 @@
       const sections = toArray(category && category.sections).map((section, sectionIndex) => {
         const sectionId = toId(section && section.id, categoryId + '_section_' + sectionIndex);
         const sectionLabel = toText(section && section.label).trim() || sectionId;
-        const cards = toArray(section && section.cards).map((card, cardIndex) => {
+        const seenCardsInSection = new Set();
+        const cards = [];
+
+        toArray(section && section.cards).forEach((card, cardIndex) => {
           const source = normalizeSource(card && card.source);
           const badges = normalizeBadgeList(card && card.badges);
           const title = toText(card && card.title).trim();
@@ -358,8 +369,15 @@
           const desc = toText(card && card.desc).trim();
           const domain = normalizeDomain(card && card.domain, href);
           const favicon = normalizeFavicon(card && card.favicon, href, domain);
+          const dedupeKey = normalizeSearchValue(title + ' ' + (domain || href));
 
-          return {
+          if (!title || !href || seenCardsInSection.has(dedupeKey)) {
+            return;
+          }
+
+          seenCardsInSection.add(dedupeKey);
+
+          cards.push({
             aiId: createAiId(categoryId, sectionId, cardIndex),
             categoryId,
             categoryLabel,
@@ -378,7 +396,7 @@
             domain,
             badges,
             source,
-          };
+          });
         });
 
         return {
@@ -1113,12 +1131,16 @@
 
   function bindEvents() {
     refs.search.addEventListener('input', function () {
-      const nextValue = this.value.toLowerCase().trim();
+      const nextValue = normalizeSearchValue(this.value);
       window.clearTimeout(filterTimer);
+      window.cancelAnimationFrame(searchFrame);
       filterTimer = window.setTimeout(() => {
-        state.searchVal = nextValue;
-        applyFilters(true);
-      }, 70);
+        searchFrame = window.requestAnimationFrame(() => {
+          searchFrame = 0;
+          state.searchVal = nextValue;
+          applyFilters(true);
+        });
+      }, 45);
     });
 
     if (refs.langPt) {

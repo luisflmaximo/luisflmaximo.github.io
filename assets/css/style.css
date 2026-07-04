@@ -38,7 +38,16 @@
    ================================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; font-size: 16px; }
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+@supports not (overflow: clip) {
+  html { overflow-x: hidden; }
+}
 
 /* ── Custom Scrollbar (Premium Theme Style) ── */
 ::-webkit-scrollbar {
@@ -64,10 +73,35 @@ body {
   color: var(--text);
   line-height: 1.65;
   min-height: 100vh;
+  max-width: 100%;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
 }
 
-img { display: block; max-width: 100%; }
+@supports not (overflow: clip) {
+  body { overflow-x: hidden; }
+}
+
+main,
+section,
+article,
+aside,
+header,
+footer,
+nav,
+div {
+  min-width: 0;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+img { display: block; }
 a { color: inherit; text-decoration: none; }
 ul { list-style: none; }
 button { font-family: var(--font-body); cursor: pointer; border: none; background: none; }
@@ -112,7 +146,7 @@ select:focus-visible,
   font-size: clamp(2.8rem, 6vw, 4.5rem);
   font-weight: 400;
   line-height: 1.08;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 .display-lg {
   font-family: var(--font-display);
@@ -415,7 +449,7 @@ select:focus-visible,
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.2rem 2rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.4rem;
 }
 .hero__info-label {
   font-size: 0.65rem;
@@ -429,6 +463,13 @@ select:focus-visible,
   font-size: 0.95rem;
   color: var(--text);
   font-weight: 400;
+}
+.hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.35rem;
 }
 .hero__socials {
   display: flex;
@@ -448,6 +489,7 @@ select:focus-visible,
   border-radius: 100px;
   background: var(--surface);
   transition: all var(--transition);
+  max-width: 100%;
 }
 .hero__social-link:hover {
   color: var(--accent);
@@ -759,6 +801,24 @@ select:focus-visible,
   margin-bottom: 1rem;
 }
 .pdf-card__icon svg { width: 20px; height: 20px; color: var(--accent); }
+.pdf-card__preview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 983 / 1390;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-sm);
+}
+.pdf-card__preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
 .pdf-card__course {
   font-size: 0.65rem;
   font-weight: 600;
@@ -800,14 +860,14 @@ select:focus-visible,
   -webkit-user-select: none;
   user-select: none;
   --viewer-zoom: 1;
-  --viewer-base-width: min(980px, calc(100vw - 2.5rem));
-  --viewer-page-width: min(980px, calc(100vw - 2.5rem));
+  --viewer-base-width: min(980px, calc(100vw - 0.9rem));
+  --viewer-page-width: min(980px, calc(100vw - 0.9rem));
 }
 .protected-viewer-page .container {
   max-width: 100%;
   width: 100%;
-  padding-left: clamp(0.5rem, 1.4vw, 1rem);
-  padding-right: clamp(0.5rem, 1.4vw, 1rem);
+  padding-left: clamp(0.3rem, 0.8vw, 0.75rem);
+  padding-right: clamp(0.3rem, 0.8vw, 0.75rem);
 }
 .protected-viewer {
   padding-top: 1.5rem;
@@ -995,8 +1055,8 @@ select:focus-visible,
 
 @media (max-width: 768px) {
   .protected-viewer-page {
-    --viewer-base-width: calc(100vw - 1.5rem);
-    --viewer-page-width: calc(100vw - 1.5rem);
+    --viewer-base-width: calc(100vw - 0.65rem);
+    --viewer-page-width: calc(100vw - 0.65rem);
   }
   .protected-viewer {
     padding-top: 0.75rem;
@@ -1036,8 +1096,8 @@ select:focus-visible,
 
 @media (max-width: 480px) {
   .protected-viewer-page {
-    --viewer-base-width: calc(100vw - 1rem);
-    --viewer-page-width: calc(100vw - 1rem);
+    --viewer-base-width: calc(100vw - 0.45rem);
+    --viewer-page-width: calc(100vw - 0.45rem);
   }
   .protected-viewer__zoom {
     gap: 0.25rem;
@@ -1121,6 +1181,8 @@ select:focus-visible,
   border-radius: var(--radius);
   background: var(--surface-2);
   transition: all var(--transition);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .politizate-social:hover {
   color: var(--accent);
@@ -1159,6 +1221,7 @@ select:focus-visible,
   text-transform: uppercase;
   color: var(--text-light);
   margin-bottom: 0.5rem;
+  width: 100%;
 }
 .instagram-embed-grid {
   display: grid;
@@ -1297,7 +1360,12 @@ select:focus-visible,
 .cv-contact-item svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 2px; color: rgba(255,255,255,0.55); }
 /* LinkedIn icon in sidebar shares same muted colour — no extra class needed */
 .cv-contact-item__linkedin-icon { color: rgba(255,255,255,0.55); }
-.cv-contact-item a { color: rgba(255,255,255,0.85); transition: color var(--transition); }
+.cv-contact-item a {
+  color: rgba(255,255,255,0.85);
+  transition: color var(--transition);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .cv-contact-item a:hover { color: #fff; }
 .cv-skill-item {
   margin-bottom: 0.9rem;
@@ -1477,6 +1545,8 @@ select:focus-visible,
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 .footer__social {
   width: 32px; height: 32px;
@@ -1612,7 +1682,15 @@ select:focus-visible,
   .linkedin-layout { grid-template-columns: 1fr; }
   .linkedin-profile-panel {
     --linkedin-profile-width: min(100%, 332px);
-    justify-self: end;
+    justify-self: stretch;
+    align-items: center;
+    width: 100%;
+  }
+  .linkedin-profile-embed,
+  .linkedin-profile-panel .LI-profile-badge,
+  .linkedin-badge-fallback {
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
   .linkedin-profile-embed--desktop { display: none !important; }
   .linkedin-profile-embed--mobile { display: block !important; }
@@ -1631,6 +1709,7 @@ select:focus-visible,
   /* Politiza-te */
   .politizate-card__top { grid-template-columns: 1fr; }
   .politizate-card__socials { flex-direction: row; flex-wrap: wrap; }
+  .politizate-socials__label { flex: 0 0 100%; margin-bottom: 0.15rem; }
   .politizate-social { flex: 1 0 calc(50% - 0.25rem); }
 
   /* Instagram grid */
@@ -1641,9 +1720,30 @@ select:focus-visible,
 }
 
 @media (max-width: 480px) {
+  .nav__inner { gap: 0.6rem; }
+  .nav__right { gap: 0.55rem; }
+  .nav__logo { font-size: 1.1rem; }
+  .nav__lang-btn {
+    font-size: 0.64rem;
+    letter-spacing: 0.04em;
+    padding: 0.22rem 0.38rem;
+  }
+  .btn {
+    white-space: normal;
+    justify-content: center;
+    text-align: center;
+  }
   .hero__info-grid { grid-template-columns: 1fr; }
   .instagram-embed-grid { grid-template-columns: 1fr; }
-  .hero__socials { flex-direction: column; align-items: flex-start; }
+  .hero__socials {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hero__social-link {
+    width: 100%;
+    justify-content: center;
+  }
+  .politizate-social { flex-basis: 100%; }
   .linkedin-post-card__frame { min-height: 643px; }
   .cv-download-bar__inner { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
 }
