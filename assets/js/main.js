@@ -134,7 +134,7 @@
   const linkedinProfilePanels = Array.from(document.querySelectorAll('[data-linkedin-profile-panel]'));
   const linkedinFrames        = Array.from(document.querySelectorAll('.linkedin-post-card__frame'));
   const LINKEDIN_BADGE_SCRIPT = 'https://platform.linkedin.com/badges/js/profile.js';
-  const SHOULD_LOAD_LINKEDIN_EMBEDS = false;
+  const SHOULD_LOAD_LINKEDIN_EMBEDS = true;
 
   if (linkedinSection || linkedinFrames.length) {
     const isTopLevelContext = (() => {
@@ -148,30 +148,36 @@
       linkedinFrames.forEach((frame) => {
         const fw = frame.getBoundingClientRect().width || 320;
         let h = (vw <= 480) ? Math.max(680, Math.min(880, Math.round(vh * 0.84)))
-              : (vw <= 768) ? Math.max(640, Math.min(820, Math.round(vh * 0.8)))
+              : (vw <= 768) ? Math.max(590, Math.min(660, Math.round(vh * 0.66)))
               : 614;
-        if (fw < 340) h += 28;
+        if (fw < 340) h += vw <= 768 ? 18 : 28;
         frame.style.height = frame.style.minHeight = h + 'px';
       });
     };
 
     if (linkedinFrames.length) {
       let rTimer;
-      const onVpChange = () => { clearTimeout(rTimer); rTimer = setTimeout(setLinkedinFrameHeight, 120); };
+      const onVpChange = () => {
+        clearTimeout(rTimer);
+        rTimer = setTimeout(() => {
+          setLinkedinFrameHeight();
+          keepOnlyActiveLinkedinProfileEmbed();
+        }, 120);
+      };
       setLinkedinFrameHeight();
       window.addEventListener('resize',            onVpChange, { passive: true });
       window.addEventListener('orientationchange', onVpChange, { passive: true });
     }
 
-    /* Remove the inactive badge variant before the script runs */
+    /* Keep both badge variants in the DOM so resizing between mobile and desktop never loses the profile embed. */
     const keepOnlyActiveLinkedinProfileEmbed = () => {
       if (!linkedinProfilePanels.length) return;
       const useMobile = !!(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
       linkedinProfilePanels.forEach((panel) => {
-        const inactive = useMobile
-          ? panel.querySelector('.linkedin-profile-embed--desktop')
-          : panel.querySelector('.linkedin-profile-embed--mobile');
-        if (inactive && inactive.parentNode) inactive.parentNode.removeChild(inactive);
+        const desktop = panel.querySelector('.linkedin-profile-embed--desktop');
+        const mobile = panel.querySelector('.linkedin-profile-embed--mobile');
+        if (desktop) desktop.setAttribute('aria-hidden', useMobile ? 'true' : 'false');
+        if (mobile) mobile.setAttribute('aria-hidden', useMobile ? 'false' : 'true');
       });
     };
 

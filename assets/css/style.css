@@ -595,6 +595,7 @@ select:focus-visible,
   border: 0;
   border-radius: 10px;
   background: var(--surface);
+  overflow: hidden;
 }
 .linkedin-post-card--loaded .linkedin-post-card__preview {
   display: none;
@@ -1681,16 +1682,23 @@ select:focus-visible,
   .linkedin-section__header { flex-direction: column; }
   .linkedin-layout { grid-template-columns: 1fr; }
   .linkedin-profile-panel {
-    --linkedin-profile-width: min(100%, 332px);
+    --linkedin-profile-width: 332px;
+    --linkedin-compact-gap: 2px;
+    display: grid;
+    grid-template-columns: var(--linkedin-profile-width) minmax(0, 1fr);
+    justify-content: stretch;
+    align-items: start;
+    gap: var(--linkedin-compact-gap);
     justify-self: stretch;
-    align-items: center;
     width: 100%;
+    margin-inline: 0;
   }
   .linkedin-profile-embed,
   .linkedin-profile-panel .LI-profile-badge,
   .linkedin-badge-fallback {
-    margin-left: auto !important;
-    margin-right: auto !important;
+    align-self: start;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
   .linkedin-profile-embed--desktop { display: none !important; }
   .linkedin-profile-embed--mobile { display: block !important; }
@@ -1698,12 +1706,35 @@ select:focus-visible,
     flex-direction: column;
     align-items: flex-start;
   }
-  .linkedin-post-card__frame { min-height: 643px; }
+  .linkedin-post-card__frame { min-height: 590px; }
   .linkedin-cta {
-    width: min(100%, calc(var(--linkedin-profile-width) - 19px));
-    max-width: min(100%, calc(var(--linkedin-profile-width) - 19px));
-    margin-left: auto;
-    margin-right: 15px;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    height: auto;
+    align-self: start;
+    margin: 0;
+    padding: 0.95rem;
+  }
+  .linkedin-cta__icon {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 0.75rem;
+  }
+  .linkedin-cta__icon svg { width: 19px; height: 19px; }
+  .linkedin-cta__title {
+    font-size: 0.84rem;
+    line-height: 1.25;
+    margin-bottom: 0.25rem;
+  }
+  .linkedin-cta__text {
+    font-size: 0.74rem;
+    line-height: 1.38;
+    margin-bottom: 0.75rem;
+  }
+  .linkedin-cta .btn {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.78rem;
   }
 
   /* Politiza-te */
@@ -1717,6 +1748,37 @@ select:focus-visible,
 
   /* Footer */
   .footer__inner { justify-content: center; text-align: center; }
+}
+
+@media (max-width: 768px) {
+  .linkedin-profile-panel .LI-profile-badge iframe {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .linkedin-profile-panel {
+    --linkedin-profile-width: min(100%, 332px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .linkedin-profile-embed,
+  .linkedin-profile-panel .LI-profile-badge,
+  .linkedin-badge-fallback {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .linkedin-cta {
+    width: min(100%, calc(var(--linkedin-profile-width) - 19px));
+    max-width: min(100%, calc(var(--linkedin-profile-width) - 19px));
+    margin-left: auto;
+    margin-right: 15px;
+    padding: 1.6rem;
+  }
 }
 
 @media (max-width: 480px) {

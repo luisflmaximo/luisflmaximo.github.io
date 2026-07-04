@@ -26,6 +26,10 @@
     imagePreview: document.getElementById('secretAiImagePreview'),
     imageThumbnail: document.getElementById('secretAiImageThumbnail'),
     imageRemoveBtn: document.getElementById('secretAiImageRemoveBtn'),
+    eyebrow: document.querySelector('.secret-ai__eyebrow'),
+    title: document.getElementById('secretAiTitle'),
+    subtitle: document.querySelector('.secret-ai__subtitle'),
+    label: document.querySelector('.secret-ai__label'),
   };
 
   if (!refs.root || !refs.panel || !refs.backdrop || !refs.fab || !refs.close || !refs.messages || !refs.form || !refs.input || !refs.submit || !refs.hint || !refs.chips || !refs.attachBtn || !refs.fileInput || !refs.imagePreview || !refs.imageThumbnail || !refs.imageRemoveBtn) {
@@ -35,6 +39,116 @@
   const mobileQuery = (window.matchMedia && typeof window.matchMedia === 'function')
     ? window.matchMedia('(max-width: 640px)')
     : { matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} };
+  const AI_COPY = {
+    pt: {
+      assistantRole: 'IA',
+      userRole: 'Tu',
+      eyebrow: 'Assistente do Catálogo',
+      title: 'Que site devo usar?',
+      subtitle: 'Responde só com base nas descrições desta aba secreta.',
+      closeLabel: 'Fechar assistente',
+      label: 'Tarefa',
+      placeholder: 'Ex.: quero criar uma apresentação rápida sobre política europeia...',
+      attachLabel: 'Anexar imagem',
+      previewAlt: 'Pré-visualização',
+      removeImage: 'Remover imagem',
+      submit: 'Perguntar',
+      thinking: 'A pensar…',
+      baseHint: 'A IA só recomenda sites já presentes neste catálogo.',
+      activeCategory: 'Categoria ativa: ',
+      openSite: 'Abrir site',
+      fallbackReason: 'Parece ajustar-se bem ao que pediste.',
+      noCandidates: 'Ainda não encontrei candidatos suficientes no catálogo para responder com confiança.',
+      requestError: 'Falha ao pedir recomendações.',
+      defaultAnswerWithMatches: 'Estas parecem ser as opções mais adequadas dentro do catálogo atual.',
+      defaultAnswerNoMatch: 'Não encontrei um match claro no catálogo com base no que pediste.',
+      setupMessage: 'O chat já está montado, mas ainda falta ligar o endpoint da IA.\n\nPara ativar isto tens só de publicar o Worker da Cloudflare, definir o segredo GROQ_API_KEY e colar o URL final em assets/js/secret-ai-config.js.',
+      catalogLoading: 'O catálogo ainda está a carregar. Tenta outra vez dentro de um instante.',
+      imagePrompt: 'Analisa esta imagem em relação aos sites.',
+      imageSent: 'Imagem enviada',
+      genericError: 'Não consegui obter uma resposta da IA neste momento.',
+      welcome: 'Diz-me o que precisas e eu sugiro os sites mais adequados desta aba.',
+      connectError: 'Não consegui ligar o assistente ao catálogo desta página.',
+      chips: [
+        { label: '🧩 Jogo Coop', prompt: 'Recomenda um jogo cooperativo de puzzle' },
+        { label: '🎨 Criar Imagens', prompt: 'Quais são as melhores IAs para criar imagens?' },
+        { label: '📚 Resumir PDFs', prompt: 'Ferramenta gratuita para resumir PDFs e estudar' },
+        { label: '🎬 Edição Vídeo', prompt: 'Encontra ferramentas para edição de vídeo' },
+      ],
+    },
+    en: {
+      assistantRole: 'AI',
+      userRole: 'You',
+      eyebrow: 'Catalog Assistant',
+      title: 'Which site should I use?',
+      subtitle: 'Answers only from the descriptions in this secret tab.',
+      closeLabel: 'Close assistant',
+      label: 'Task',
+      placeholder: 'E.g. I want to create a quick presentation about European politics...',
+      attachLabel: 'Attach image',
+      previewAlt: 'Preview',
+      removeImage: 'Remove image',
+      submit: 'Ask',
+      thinking: 'Thinking…',
+      baseHint: 'The AI only recommends sites already present in this catalog.',
+      activeCategory: 'Active category: ',
+      openSite: 'Open site',
+      fallbackReason: 'It seems to fit what you asked for.',
+      noCandidates: 'I have not found enough candidates in the catalog to answer confidently yet.',
+      requestError: 'Failed to request recommendations.',
+      defaultAnswerWithMatches: 'These seem to be the best options in the current catalog.',
+      defaultAnswerNoMatch: 'I did not find a clear match in the catalog based on what you asked for.',
+      setupMessage: 'The chat is ready, but the AI endpoint is not connected yet.\n\nTo activate it, publish the Cloudflare Worker, set the GROQ_API_KEY secret, and paste the final URL into assets/js/secret-ai-config.js.',
+      catalogLoading: 'The catalog is still loading. Try again in a moment.',
+      imagePrompt: 'Analyze this image in relation to the sites.',
+      imageSent: 'Image sent',
+      genericError: 'I could not get an AI response right now.',
+      welcome: 'Tell me what you need and I will suggest the best sites from this tab.',
+      connectError: 'I could not connect the assistant to this page catalog.',
+      chips: [
+        { label: '🧩 Coop Game', prompt: 'Recommend a cooperative puzzle game' },
+        { label: '🎨 Create Images', prompt: 'What are the best AIs for creating images?' },
+        { label: '📚 Summarize PDFs', prompt: 'Free tool to summarize PDFs and study' },
+        { label: '🎬 Video Editing', prompt: 'Find tools for video editing' },
+      ],
+    },
+    es: {
+      assistantRole: 'IA',
+      userRole: 'Tú',
+      eyebrow: 'Asistente del catálogo',
+      title: '¿Qué sitio debería usar?',
+      subtitle: 'Responde solo a partir de las descripciones de esta pestaña secreta.',
+      closeLabel: 'Cerrar asistente',
+      label: 'Tarea',
+      placeholder: 'Ej.: quiero crear una presentación rápida sobre política europea...',
+      attachLabel: 'Adjuntar imagen',
+      previewAlt: 'Vista previa',
+      removeImage: 'Quitar imagen',
+      submit: 'Preguntar',
+      thinking: 'Pensando…',
+      baseHint: 'La IA solo recomienda sitios ya presentes en este catálogo.',
+      activeCategory: 'Categoría activa: ',
+      openSite: 'Abrir sitio',
+      fallbackReason: 'Parece ajustarse bien a lo que pediste.',
+      noCandidates: 'Todavía no he encontrado suficientes candidatos en el catálogo para responder con confianza.',
+      requestError: 'Error al pedir recomendaciones.',
+      defaultAnswerWithMatches: 'Estas parecen ser las opciones más adecuadas dentro del catálogo actual.',
+      defaultAnswerNoMatch: 'No encontré una coincidencia clara en el catálogo según lo que pediste.',
+      setupMessage: 'El chat ya está montado, pero todavía falta conectar el endpoint de IA.\n\nPara activarlo, publica el Worker de Cloudflare, define el secreto GROQ_API_KEY y pega la URL final en assets/js/secret-ai-config.js.',
+      catalogLoading: 'El catálogo todavía se está cargando. Inténtalo de nuevo dentro de un momento.',
+      imagePrompt: 'Analiza esta imagen en relación con los sitios.',
+      imageSent: 'Imagen enviada',
+      genericError: 'No he podido obtener una respuesta de la IA en este momento.',
+      welcome: 'Dime lo que necesitas y te sugeriré los sitios más adecuados de esta pestaña.',
+      connectError: 'No he podido conectar el asistente al catálogo de esta página.',
+      chips: [
+        { label: '🧩 Juego Coop', prompt: 'Recomienda un juego cooperativo de puzles' },
+        { label: '🎨 Crear imágenes', prompt: '¿Cuáles son las mejores IA para crear imágenes?' },
+        { label: '📚 Resumir PDF', prompt: 'Herramienta gratuita para resumir PDF y estudiar' },
+        { label: '🎬 Edición de vídeo', prompt: 'Encuentra herramientas para edición de vídeo' },
+      ],
+    },
+  };
   const STOP_WORDS = new Set([
     'a', 'ao', 'aos', 'as', 'com', 'como', 'da', 'das', 'de', 'do', 'dos',
     'e', 'em', 'eu', 'la', 'mais', 'me', 'mostra', 'na', 'nas', 'no', 'nos', 'o', 'os',
@@ -71,7 +185,48 @@
     typingNode: null,
     closeTimer: null,
     attachedImage: null, // Stores { mimeType, data (base64) }
+    locale: getStoredLocale(),
   };
+
+  function getStoredLocale() {
+    try {
+      const stored = localStorage.getItem('secretPageLocale') || localStorage.getItem('lang-pref');
+      return Object.prototype.hasOwnProperty.call(AI_COPY, stored) ? stored : 'pt';
+    } catch (_) {
+      return 'pt';
+    }
+  }
+
+  function getCopy() {
+    return AI_COPY[state.locale] || AI_COPY.pt;
+  }
+
+  function applyLocale() {
+    const copy = getCopy();
+
+    if (refs.eyebrow) refs.eyebrow.textContent = copy.eyebrow;
+    if (refs.title) refs.title.textContent = copy.title;
+    if (refs.subtitle) refs.subtitle.textContent = copy.subtitle;
+    if (refs.label) refs.label.textContent = copy.label;
+    if (refs.close) refs.close.setAttribute('aria-label', copy.closeLabel);
+    if (refs.input) refs.input.placeholder = copy.placeholder;
+    if (refs.attachBtn) {
+      refs.attachBtn.setAttribute('aria-label', copy.attachLabel);
+      refs.attachBtn.title = copy.attachLabel;
+    }
+    if (refs.imageThumbnail) refs.imageThumbnail.alt = copy.previewAlt;
+    if (refs.imageRemoveBtn) refs.imageRemoveBtn.setAttribute('aria-label', copy.removeImage);
+    if (!state.busy && refs.submit) refs.submit.textContent = copy.submit;
+
+    Array.from(refs.chips.querySelectorAll('.secret-ai__chip')).forEach((chip, index) => {
+      const chipCopy = copy.chips[index];
+      if (!chipCopy) return;
+      chip.textContent = chipCopy.label;
+      chip.dataset.prompt = chipCopy.prompt;
+    });
+
+    updateHint();
+  }
 
   function normalizeText(value) {
     const text = String(value || '').trim().toLowerCase();
@@ -246,7 +401,7 @@
 
     const roleLabel = document.createElement('span');
     roleLabel.className = 'secret-ai__role';
-    roleLabel.textContent = role === 'assistant' ? 'IA' : 'Tu';
+    roleLabel.textContent = role === 'assistant' ? getCopy().assistantRole : getCopy().userRole;
 
     const bubble = document.createElement('div');
     bubble.className = 'secret-ai__bubble' + (bubbleClassName ? ' ' + bubbleClassName : '');
@@ -322,14 +477,14 @@
 
         const reason = document.createElement('p');
         reason.className = 'secret-ai__rec-reason';
-        reason.textContent = clampText(entry.reason || card.desc || 'Parece ajustar-se bem ao que pediste.', 160);
+        reason.textContent = clampText(entry.reason || card.desc || getCopy().fallbackReason, 160);
 
         const link = document.createElement('a');
         link.className = 'secret-ai__rec-link';
         link.href = card.href;
         link.target = '_blank';
         link.rel = 'noopener';
-        link.textContent = 'Abrir site';
+        link.textContent = getCopy().openSite;
 
         article.appendChild(titleRow);
         article.appendChild(meta);
@@ -373,7 +528,7 @@
   function setBusy(isBusy) {
     state.busy = isBusy;
     refs.submit.disabled = isBusy;
-    refs.submit.textContent = isBusy ? 'A pensar…' : 'Perguntar';
+    refs.submit.textContent = isBusy ? getCopy().thinking : getCopy().submit;
     refs.input.readOnly = isBusy;
   }
 
@@ -407,16 +562,16 @@
   function updateHint() {
     const filters = state.filters || {};
     if (filters.sectionLabel) {
-      refs.hint.textContent = 'Categoria ativa: ' + filters.categoryLabel + ' · ' + filters.sectionLabel;
+      refs.hint.textContent = getCopy().activeCategory + filters.categoryLabel + ' · ' + filters.sectionLabel;
       return;
     }
 
     if (filters.categoryLabel) {
-      refs.hint.textContent = 'Categoria ativa: ' + filters.categoryLabel;
+      refs.hint.textContent = getCopy().activeCategory + filters.categoryLabel;
       return;
     }
 
-    refs.hint.textContent = 'A IA só recomenda sites já presentes neste catálogo.';
+    refs.hint.textContent = getCopy().baseHint;
   }
 
   function pushHistory(role, text) {
@@ -711,7 +866,7 @@
 
     if (!payload.candidates.length) {
       return {
-        answer: 'Ainda não encontrei candidatos suficientes no catálogo para responder com confiança.',
+        answer: getCopy().noCandidates,
         recommendations: [],
       };
     }
@@ -733,7 +888,7 @@
     }
 
     if (!response.ok) {
-      const errorMessage = body && body.error ? String(body.error) : 'Falha ao pedir recomendações.';
+      const errorMessage = body && body.error ? String(body.error) : getCopy().requestError;
       throw new Error(errorMessage);
     }
 
@@ -744,8 +899,8 @@
     );
     const answer = clampText(body && body.answer || '', 500) || (
       recommendations.length
-        ? 'Estas parecem ser as opções mais adequadas dentro do catálogo atual.'
-        : 'Não encontrei um match claro no catálogo com base no que pediste.'
+        ? getCopy().defaultAnswerWithMatches
+        : getCopy().defaultAnswerNoMatch
     );
 
     return {
@@ -756,14 +911,13 @@
 
   function showSetupMessage() {
     appendTextMessage('assistant',
-      'O chat já está montado, mas ainda falta ligar o endpoint da IA.\n\n' +
-      'Para ativar isto tens só de publicar o Worker da Cloudflare, definir o segredo GROQ_API_KEY e colar o URL final em assets/js/secret-ai-config.js.',
+      getCopy().setupMessage,
       { bubbleClassName: 'secret-ai__bubble--muted' });
   }
 
   function showCatalogUnavailableMessage() {
     appendTextMessage('assistant',
-      'O catálogo ainda está a carregar. Tenta outra vez dentro de um instante.',
+      getCopy().catalogLoading,
       { bubbleClassName: 'secret-ai__bubble--muted' });
   }
 
@@ -814,17 +968,17 @@
     showTypingMessage();
 
     try {
-      const result = await requestRecommendations(savedQuery || 'Analisa esta imagem em relação aos sites.');
+      const result = await requestRecommendations(savedQuery || getCopy().imagePrompt);
       removeTypingMessage();
       appendAssistantRecommendations(result.answer, result.recommendations);
-      pushHistory('user', savedQuery || 'Imagem enviada');
+      pushHistory('user', savedQuery || getCopy().imageSent);
       pushHistory('assistant', result.answer);
     } catch (error) {
       removeTypingMessage();
       appendTextMessage('assistant',
         error && error.message
           ? error.message
-          : 'Não consegui obter uma resposta da IA neste momento.',
+          : getCopy().genericError,
         { bubbleClassName: 'secret-ai__bubble--error' });
     } finally {
       setBusy(false);
@@ -833,7 +987,7 @@
 
   function seedWelcomeMessage() {
     appendTextMessage('assistant',
-      'Diz-me o que precisas e eu sugiro os sites mais adequados desta aba.',
+      getCopy().welcome,
       { bubbleClassName: 'secret-ai__bubble--muted' });
   }
 
@@ -949,7 +1103,7 @@
 
     if (attempt >= 20) {
       appendTextMessage('assistant',
-        'Não consegui ligar o assistente ao catálogo desta página.',
+        getCopy().connectError,
         { bubbleClassName: 'secret-ai__bubble--error' });
       return;
     }
@@ -959,9 +1113,16 @@
     }, 180);
   }
 
+  window.addEventListener('secret-locale-change', (event) => {
+    const locale = event.detail && event.detail.locale;
+    if (!Object.prototype.hasOwnProperty.call(AI_COPY, locale) || state.locale === locale) return;
+    state.locale = locale;
+    applyLocale();
+  });
+
+  applyLocale();
   seedWelcomeMessage();
   bindEvents();
   autoResizeInput();
-  updateHint();
   connectToSecretTools(0);
 })();

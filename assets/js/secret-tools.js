@@ -30,6 +30,19 @@
         return totalCount + ' recursos organizados por categoria. Usa a pesquisa ou os filtros para encontrar o que precisas.';
       },
       footerCopy: '© 2026 Luís Máximo · Loures, Lisboa',
+      allCategories: 'Todos',
+      allSections: 'Todas',
+      categoryItems(count) { return count + ' itens'; },
+      resultsCount(count) { return count + ' resultado' + (count !== 1 ? 's' : ''); },
+      searchPlaceholder(count) { return 'Pesquisar nos ' + count + ' recurso' + (count !== 1 ? 's' : '') + '...'; },
+      resultsMeta(visibleCount, renderedCount) { return 'A mostrar ' + renderedCount + ' de ' + visibleCount + ' resultados.'; },
+      noResults: 'Nenhum resultado encontrado.',
+      loadError: 'Não foi possível carregar os recursos.',
+      modalTitle: 'Dica / Prompt',
+      modalClose: 'Fechar',
+      copyButton: 'Copiar Conteúdo',
+      copied: 'Copiado!',
+      sourceLink: 'Ver Fonte Original',
     },
     en: {
       title: 'Tools — Luís Máximo',
@@ -52,6 +65,54 @@
         return totalCount + ' resources organized by category. Use search or filters to find what you need.';
       },
       footerCopy: '© 2026 Luís Máximo · Loures, Lisbon',
+      allCategories: 'All',
+      allSections: 'All',
+      categoryItems(count) { return count + ' item' + (count !== 1 ? 's' : ''); },
+      resultsCount(count) { return count + ' result' + (count !== 1 ? 's' : ''); },
+      searchPlaceholder(count) { return 'Search across ' + count + ' resource' + (count !== 1 ? 's' : '') + '...'; },
+      resultsMeta(visibleCount, renderedCount) { return 'Showing ' + renderedCount + ' of ' + visibleCount + ' results.'; },
+      noResults: 'No results found.',
+      loadError: 'Could not load the resources.',
+      modalTitle: 'Tip / Prompt',
+      modalClose: 'Close',
+      copyButton: 'Copy Content',
+      copied: 'Copied!',
+      sourceLink: 'View Original Source',
+    },
+    es: {
+      title: 'Herramientas — Luís Máximo',
+      metaDescription: 'Área privada con herramientas y referencias útiles de Luís Máximo.',
+      burgerLabel: 'Abrir menú',
+      nav: {
+        logoHref: '../es/',
+        home: { label: 'Inicio', href: '../es/' },
+        projects: { label: 'Proyectos', href: '../es/proyectos/' },
+        curriculum: { label: 'Currículum', href: '../es/curriculum/' },
+        tools: { label: 'Herramientas', href: './' },
+      },
+      pageLabel: 'Área privada',
+      pageTitle: 'Herramientas',
+      aiButtonText: 'Preguntar a la IA',
+      pageDesc(totalCount) {
+        if (typeof totalCount !== 'number') {
+          return 'Recursos organizados por categoría. Usa la búsqueda o los filtros para encontrar lo que necesitas.';
+        }
+        return totalCount + ' recursos organizados por categoría. Usa la búsqueda o los filtros para encontrar lo que necesitas.';
+      },
+      footerCopy: '© 2026 Luís Máximo · Loures, Lisboa',
+      allCategories: 'Todos',
+      allSections: 'Todas',
+      categoryItems(count) { return count + ' recursos'; },
+      resultsCount(count) { return count + ' resultado' + (count !== 1 ? 's' : ''); },
+      searchPlaceholder(count) { return 'Buscar en ' + count + ' recurso' + (count !== 1 ? 's' : '') + '...'; },
+      resultsMeta(visibleCount, renderedCount) { return 'Mostrando ' + renderedCount + ' de ' + visibleCount + ' resultados.'; },
+      noResults: 'No se han encontrado resultados.',
+      loadError: 'No ha sido posible cargar los recursos.',
+      modalTitle: 'Consejo / Prompt',
+      modalClose: 'Cerrar',
+      copyButton: 'Copiar contenido',
+      copied: 'Copiado!',
+      sourceLink: 'Ver fuente original',
     },
   };
 
@@ -76,8 +137,13 @@
     aiFabText: document.querySelector('.secret-ai__fab-text'),
     langPt: document.getElementById('scLangPt'),
     langEn: document.getElementById('scLangEn'),
+    langEs: document.getElementById('scLangEs'),
     burger: document.getElementById('navBurger'),
     metaDescription: document.querySelector('meta[name="description"]'),
+    tipModalTitle: document.getElementById('tipModalTitle'),
+    tipModalClose: document.getElementById('tipModalClose'),
+    tipModalCopyBtn: document.getElementById('tipModalCopyBtn'),
+    tipModalSourceLink: document.getElementById('tipModalSourceLink'),
   };
 
   const state = {
@@ -107,7 +173,8 @@
 
   function getStoredLocale() {
     try {
-      return localStorage.getItem(LOCALE_STORAGE_KEY) === 'en' ? 'en' : 'pt';
+      const stored = localStorage.getItem(LOCALE_STORAGE_KEY) || localStorage.getItem('lang-pref');
+      return Object.prototype.hasOwnProperty.call(LOCALE_COPY, stored) ? stored : 'pt';
     } catch (_) {
       return 'pt';
     }
@@ -116,6 +183,7 @@
   function storeLocale(locale) {
     try {
       localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+      localStorage.setItem('lang-pref', locale);
     } catch (_) {
       // Ignore storage failures and keep the locale in memory only.
     }
@@ -157,6 +225,19 @@
     if (refs.pageDesc) refs.pageDesc.textContent = copy.pageDesc(state.totalCount);
     if (refs.footerCopy) refs.footerCopy.textContent = copy.footerCopy;
     if (refs.aiFabText) refs.aiFabText.textContent = copy.aiButtonText;
+    if (refs.noResults) refs.noResults.textContent = copy.noResults;
+    if (refs.tipModalTitle) refs.tipModalTitle.textContent = copy.modalTitle;
+    if (refs.tipModalClose) refs.tipModalClose.setAttribute('aria-label', copy.modalClose);
+    if (refs.tipModalCopyBtn && !refs.tipModalCopyBtn.dataset.copiedState) refs.tipModalCopyBtn.textContent = copy.copyButton;
+    if (refs.tipModalSourceLink) refs.tipModalSourceLink.textContent = copy.sourceLink;
+    if (refs.catFilters) {
+      const allCategoryButton = refs.catFilters.querySelector('[data-cat="all"]');
+      if (allCategoryButton) allCategoryButton.textContent = copy.allCategories;
+    }
+    if (refs.subFilters) {
+      const allSectionButton = refs.subFilters.querySelector('[data-sec="all"]');
+      if (allSectionButton) allSectionButton.textContent = copy.allSections;
+    }
 
     if (refs.langPt) {
       refs.langPt.classList.toggle('nav__lang-btn--active', state.locale === 'pt');
@@ -167,10 +248,17 @@
       refs.langEn.classList.toggle('nav__lang-btn--active', state.locale === 'en');
       refs.langEn.setAttribute('aria-pressed', state.locale === 'en' ? 'true' : 'false');
     }
+
+    if (refs.langEs) {
+      refs.langEs.classList.toggle('nav__lang-btn--active', state.locale === 'es');
+      refs.langEs.setAttribute('aria-pressed', state.locale === 'es' ? 'true' : 'false');
+    }
+
+    window.dispatchEvent(new CustomEvent('secret-locale-change', { detail: { locale: state.locale } }));
   }
 
   function setLocale(locale) {
-    if (locale !== 'pt' && locale !== 'en') return;
+    if (!Object.prototype.hasOwnProperty.call(LOCALE_COPY, locale)) return;
     if (state.locale === locale) return;
 
     state.locale = locale;
@@ -579,27 +667,17 @@
 
     return '<div class="cat-block" data-cat="' + escapeHtml(category.id) + '">' +
       '<div class="projects-section__header"><h2 class="cat-title"><span class="cat-emoji">' + escapeHtml(category.emoji) +
-      '</span> ' + escapeHtml(category.label) + '</h2><span class="cat-count">' + count + ' itens</span></div>' +
+      '</span> ' + escapeHtml(category.label) + '</h2><span class="cat-count">' + escapeHtml(getLocaleCopy().categoryItems(count)) + '</span></div>' +
       category.sections.map((section) => sectionMarkup(section, category.id)).join('') +
       '</div>';
   }
 
   function updateCount(value) {
-    if (state.locale === 'en') {
-      refs.count.textContent = value + ' result' + (value !== 1 ? 's' : '');
-      return;
-    }
-
-    refs.count.textContent = value + ' resultado' + (value !== 1 ? 's' : '');
+    refs.count.textContent = getLocaleCopy().resultsCount(value);
   }
 
   function updateSearchPlaceholder(value) {
-    if (state.locale === 'en') {
-      refs.search.placeholder = 'Search across ' + value + ' resource' + (value !== 1 ? 's' : '') + '...';
-      return;
-    }
-
-    refs.search.placeholder = 'Pesquisar nos ' + value + ' recurso' + (value !== 1 ? 's' : '') + '...';
+    refs.search.placeholder = getLocaleCopy().searchPlaceholder(value);
   }
 
   function updateResultsMeta(visibleCount, renderedCount) {
@@ -612,9 +690,7 @@
     }
 
     refs.resultsMeta.hidden = false;
-    refs.resultsMeta.textContent = state.locale === 'en'
-      ? 'Showing ' + renderedCount + ' of ' + visibleCount + ' results.'
-      : 'A mostrar ' + renderedCount + ' de ' + visibleCount + ' resultados.';
+    refs.resultsMeta.textContent = getLocaleCopy().resultsMeta(visibleCount, renderedCount);
   }
 
   function updateInfiniteSentinel(visibleCount, renderedCount) {
@@ -876,9 +952,11 @@
         const desc = document.getElementById('tipModalDesc').textContent;
         navigator.clipboard.writeText(desc).then(() => {
           const originalText = copyBtn.textContent;
-          copyBtn.textContent = 'Copiado!';
+          copyBtn.dataset.copiedState = 'true';
+          copyBtn.textContent = getLocaleCopy().copied;
           copyBtn.style.background = 'var(--accent-mid)';
           setTimeout(() => {
+            delete copyBtn.dataset.copiedState;
             copyBtn.textContent = originalText;
             copyBtn.style.background = '';
           }, 1500);
@@ -958,7 +1036,7 @@
   }
 
   function buildCategoryButtons() {
-    const buttons = ['<button class="filter-btn active" data-cat="all">Todos</button>'];
+    const buttons = ['<button class="filter-btn active" data-cat="all">' + escapeHtml(getLocaleCopy().allCategories) + '</button>'];
     state.categories.forEach((category) => {
       buttons.push('<button class="filter-btn" data-cat="' + escapeHtml(category.id) + '">' +
         escapeHtml(category.emoji) + ' ' + escapeHtml(category.label) + '</button>');
@@ -976,7 +1054,7 @@
       return;
     }
 
-    const fragments = ['<button class="filter-btn active" data-sec="all">Todas</button>'];
+    const fragments = ['<button class="filter-btn active" data-sec="all">' + escapeHtml(getLocaleCopy().allSections) + '</button>'];
     state.categoryMap[catId].sections.forEach((section) => {
       fragments.push('<button class="filter-btn" data-sec="' + escapeHtml(section.id) + '">' +
         escapeHtml(section.label) + '</button>');
@@ -999,7 +1077,7 @@
         const count = state.filteredCategoryCounts[card.categoryId] || 0;
         temp.innerHTML = '<div class="cat-block" data-cat="' + escapeHtml(category.id) + '">' +
           '<div class="projects-section__header"><h2 class="cat-title"><span class="cat-emoji">' + escapeHtml(category.emoji) +
-          '</span> ' + escapeHtml(category.label) + '</h2><span class="cat-count">' + count + ' itens</span></div>' +
+          '</span> ' + escapeHtml(category.label) + '</h2><span class="cat-count">' + escapeHtml(getLocaleCopy().categoryItems(count)) + '</span></div>' +
           '</div>';
         catBlock = temp.firstElementChild;
         refs.content.appendChild(catBlock);
@@ -1155,6 +1233,12 @@
       });
     }
 
+    if (refs.langEs) {
+      refs.langEs.addEventListener('click', () => {
+        setLocale('es');
+      });
+    }
+
     refs.catFilters.addEventListener('click', (event) => {
       const btn = event.target.closest('.filter-btn');
       if (!btn) return;
@@ -1215,9 +1299,9 @@
   }
 
   function showLoadError() {
-    refs.noResults.textContent = 'Não foi possível carregar os recursos.';
+    refs.noResults.textContent = getLocaleCopy().loadError;
     refs.noResults.classList.add('visible');
-    refs.count.textContent = '0 resultados';
+    refs.count.textContent = getLocaleCopy().resultsCount(0);
     state.aiReady = false;
     notifyAI('load-error');
   }
