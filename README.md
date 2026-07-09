@@ -73,7 +73,7 @@ Os dados públicos de SEO e alternates estão resumidos em `docs/seo-public.json
 
 O `sitemap.xml` lista as páginas públicas indexáveis em PT, EN e ES, incluindo o visualizador público do projeto Super Bock. O `robots.txt` mantém o crawl aberto para as páginas públicas, bloqueando apenas ficheiros auxiliares que não fazem parte da experiência pública.
 
-Quando `assets/css/style.css` ou `assets/js/main.js` mudam, os links HTML usam uma query string de versão, como `?v=20260704-site7`, para evitar cache antiga no GitHub Pages. Como esses ficheiros são globais, a mesma versão aparece em todas as páginas que os carregam.
+Quando `assets/css/style.css` ou `assets/js/main.js` mudam, os links HTML usam uma query string de versão, como `?v=20260709-secret1`, para evitar cache antiga no GitHub Pages. Como esses ficheiros são globais, a mesma versão aparece em todas as páginas que os carregam.
 
 ## Contacto
 

@@ -3,6 +3,7 @@
 
   const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';
   const PDFJS_WORKER_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
+  const PDF_LIB_SCRIPT_URL = new URL('../vendor/pdf-lib.min.js', document.currentScript ? document.currentScript.src : window.location.href).href;
   const FFMPEG_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
   const FFMPEG_CORE_URL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js';
   const MEGABYTE = 1024 * 1024;
@@ -159,8 +160,15 @@
   ];
 
   let dynamicFallbackApis = [];
+  let dynamicCobaltInstancesPromise = null;
 
   async function loadDynamicCobaltInstances() {
+    if (dynamicCobaltInstancesPromise) return dynamicCobaltInstancesPromise;
+    dynamicCobaltInstancesPromise = loadDynamicCobaltInstancesOnce();
+    return dynamicCobaltInstancesPromise;
+  }
+
+  async function loadDynamicCobaltInstancesOnce() {
     try {
       const response = await fetch('https://instances.cobalt.best/api/instances');
       if (response.ok) {
@@ -180,7 +188,7 @@
         }
       }
     } catch (err) {
-      console.warn('Erro ao carregar instâncias dinâmicas do Cobalt:', err);
+      // Optional mirror discovery. Ignore failures so unrelated tools stay quiet.
     }
   }
 
@@ -1194,6 +1202,9 @@
   }
 
   async function ensurePdfLib() {
+    if (!window.PDFLib) {
+      await loadScriptOnce(PDF_LIB_SCRIPT_URL);
+    }
     if (!window.PDFLib) {
       throw new Error('O módulo PDF ainda não carregou.');
     }
@@ -3609,6 +3620,8 @@
       throw new Error('Adiciona ligações válidas com http ou https.');
     }
 
+    await loadDynamicCobaltInstances();
+
     for (let index = 0; index < validUrls.length; index += 1) {
       const url = validUrls[index];
       setProgress((index / validUrls.length) * 100, 'A processar link', url);
@@ -4856,25 +4869,50 @@
   }
 
   async function shortenUrl(longUrl) {
-    try {
-      const res = await fetch('https://is.gd/create.php?format=json&url=' + encodeURIComponent(longUrl));
-      if (res.ok) {
+    const services = [
+      { name: 'da.gd', endpoint: 'https://da.gd/s?url=', responseType: 'text' },
+      { name: 'is.gd', endpoint: 'https://is.gd/create.php?format=json&url=', responseType: 'json' },
+      { name: 'v.gd', endpoint: 'https://v.gd/create.php?format=json&url=', responseType: 'json' }
+    ];
+
+    for (let i = 0; i < services.length; i += 1) {
+      const service = services[i];
+      try {
+        const res = await fetch(service.endpoint + encodeURIComponent(longUrl), { cache: 'no-store' });
+        if (!res.ok) throw new Error('Resposta HTTP ' + res.status);
+
+        if (service.responseType === 'text') {
+          const text = (await res.text()).trim();
+          if (/^https?:\/\//i.test(text)) {
+            return {
+              url: text,
+              service: service.name,
+              shortened: true
+            };
+          }
+          throw new Error(text || 'Resposta vazia');
+        }
+
         const data = await res.json();
-        if (data.shorturl) return data.shorturl;
+        if (data.shorturl) {
+          return {
+            url: data.shorturl,
+            service: service.name,
+            shortened: true
+          };
+        }
+
+        if (data.errormessage) throw new Error(data.errormessage);
+      } catch (err) {
+        console.warn(service.name + ' failed:', err);
       }
-    } catch (err) {
-      console.warn('is.gd failed, trying alternative:', err);
     }
-    try {
-      const res = await fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(longUrl));
-      if (res.ok) {
-        const text = await res.text();
-        if (text && text.startsWith('http')) return text.trim();
-      }
-    } catch (err) {
-      console.warn('tinyurl failed too:', err);
-    }
-    return longUrl;
+
+    return {
+      url: longUrl,
+      service: 'link direto',
+      shortened: false
+    };
   }
 
   async function processLinkShortenQr(urls, options) {
@@ -4888,7 +4926,8 @@
       const url = urls[index];
       setProgress((index / urls.length) * 100, 'A encurtar link', url);
       
-      const shortUrl = await shortenUrl(url);
+      const shortLink = await shortenUrl(url);
+      const shortUrl = shortLink.url;
       
       const container = document.createElement('div');
       new QRCodeClass(container, {
@@ -4928,7 +4967,7 @@
           name: 'qrcode-' + (index + 1) + '.png',
           blob: qrBlob,
           url: URL.createObjectURL(qrBlob),
-          meta: 'Link encurtado: ' + shortUrl
+          meta: (shortLink.shortened ? 'Link encurtado (' + shortLink.service + '): ' : 'Link direto: ') + shortUrl
         }
       ]);
     }
@@ -5464,34 +5503,276 @@
   }
 
   async function createGradesPdfBlob(title, subtitle, students) {
-    if (!window.html2pdf) {
-      throw new Error('O módulo html2pdf ainda não carregou.');
+    var PDFLib = await ensurePdfLib();
+    var PDFDocument = PDFLib.PDFDocument;
+    var StandardFonts = PDFLib.StandardFonts;
+    var rgb = PDFLib.rgb;
+    var pdfDoc = await PDFDocument.create();
+    var font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    var boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    var pageWidth = 595.28;
+    var pageHeight = 841.89;
+    var margin = 36;
+    var tableWidth = pageWidth - (margin * 2);
+    var columns = [
+      { key: 'num', label: 'Numero', width: 64 },
+      { key: 'name', label: 'Nome', width: 222 },
+      { key: 'classCode', label: 'Turma', width: 58 },
+      { key: 'details', label: 'Nota/Detalhe', width: tableWidth - 64 - 222 - 58 }
+    ];
+    var lineColor = rgb(0.82, 0.87, 0.84);
+    var headerBg = rgb(0.83, 0.93, 0.89);
+    var sectionBg = rgb(0.92, 0.96, 0.94);
+    var zebraBg = rgb(0.98, 0.99, 0.98);
+    var accent = rgb(0.18, 0.42, 0.31);
+    var textColor = rgb(0.12, 0.16, 0.14);
+    var mutedColor = rgb(0.38, 0.45, 0.41);
+    var page = null;
+    var y = 0;
+    var pageIndex = 0;
+
+    function normalizePdfText(value) {
+      return String(value === undefined || value === null ? '' : value)
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/[\u2013\u2014]/g, '-')
+        .replace(/\u00a0/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
     }
 
-    var printElement = createGradesPdfElement(title, subtitle, students);
-    document.body.appendChild(printElement);
-
-    try {
-      var worker = window.html2pdf().set({
-        margin: 10,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-          scrollX: 0,
-          scrollY: 0,
-          windowWidth: 900
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-      }).from(printElement).toPdf();
-
-      var pdf = await worker.get('pdf');
-      return pdf.output('blob');
-    } finally {
-      printElement.remove();
+    function makeDrawableText(value, activeFont, size) {
+      var text = normalizePdfText(value);
+      try {
+        activeFont.widthOfTextAtSize(text || ' ', size);
+        return text;
+      } catch (_) {
+        return text.normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^\x20-\x7E]/g, '?');
+      }
     }
+
+    function textWidth(value, activeFont, size) {
+      return activeFont.widthOfTextAtSize(makeDrawableText(value, activeFont, size), size);
+    }
+
+    function wrapText(value, activeFont, size, maxWidth) {
+      var text = makeDrawableText(value, activeFont, size);
+      if (!text) return [''];
+
+      var words = text.split(/\s+/);
+      var lines = [];
+      var current = '';
+
+      words.forEach(function (word) {
+        var candidate = current ? current + ' ' + word : word;
+        if (textWidth(candidate, activeFont, size) <= maxWidth) {
+          current = candidate;
+          return;
+        }
+
+        if (current) lines.push(current);
+
+        if (textWidth(word, activeFont, size) <= maxWidth) {
+          current = word;
+          return;
+        }
+
+        var chunk = '';
+        for (var i = 0; i < word.length; i += 1) {
+          var nextChunk = chunk + word[i];
+          if (textWidth(nextChunk, activeFont, size) <= maxWidth) {
+            chunk = nextChunk;
+          } else {
+            if (chunk) lines.push(chunk);
+            chunk = word[i];
+          }
+        }
+        current = chunk;
+      });
+
+      if (current) lines.push(current);
+      return lines.length ? lines : [''];
+    }
+
+    function drawText(value, x, yPos, size, options) {
+      var opts = options || {};
+      page.drawText(makeDrawableText(value, opts.font || font, size), {
+        x: x,
+        y: yPos,
+        size: size,
+        font: opts.font || font,
+        color: opts.color || textColor
+      });
+    }
+
+    function drawTableHeader() {
+      var rowHeight = 24;
+      var x = margin;
+      page.drawRectangle({
+        x: margin,
+        y: y - rowHeight,
+        width: tableWidth,
+        height: rowHeight,
+        color: headerBg,
+        borderColor: lineColor,
+        borderWidth: 0.7
+      });
+
+      columns.forEach(function (column) {
+        page.drawRectangle({
+          x: x,
+          y: y - rowHeight,
+          width: column.width,
+          height: rowHeight,
+          borderColor: lineColor,
+          borderWidth: 0.7
+        });
+        drawText(column.label, x + 5, y - 15.5, 9.5, { font: boldFont, color: accent });
+        x += column.width;
+      });
+      y -= rowHeight;
+    }
+
+    function addPage() {
+      pageIndex += 1;
+      page = pdfDoc.addPage([pageWidth, pageHeight]);
+      y = pageHeight - margin;
+
+      drawText(pageIndex === 1 ? title : title + ' - continuacao', margin, y - 4, 18, { font: boldFont, color: accent });
+      y -= 22;
+      if (subtitle) {
+        drawText(subtitle, margin, y, 10.5, { color: mutedColor });
+        y -= 15;
+      }
+      drawText('Gerado em: ' + new Date().toLocaleDateString('pt-PT'), margin, y, 9.5, { color: mutedColor });
+      y -= 18;
+      drawTableHeader();
+    }
+
+    function getRowLayout(student) {
+      var fontSize = 8.7;
+      var lineHeight = 10.5;
+      var paddingX = 5;
+      var paddingTop = 7;
+      var values = {
+        num: student.num || '',
+        name: student.name || '',
+        classCode: student.classCode || '',
+        details: getGradeDetail(student)
+      };
+      var wrapped = columns.map(function (column) {
+        return wrapText(values[column.key], font, fontSize, column.width - (paddingX * 2));
+      });
+      var maxLines = wrapped.reduce(function (max, lines) {
+        return Math.max(max, lines.length);
+      }, 1);
+      return {
+        fontSize: fontSize,
+        lineHeight: lineHeight,
+        paddingX: paddingX,
+        paddingTop: paddingTop,
+        wrapped: wrapped,
+        rowHeight: Math.max(22, paddingTop + 5 + (maxLines * lineHeight))
+      };
+    }
+
+    function drawClassBreak(classCode, nextRowHeight) {
+      var rowHeight = 22;
+      if (y - rowHeight - (nextRowHeight || 0) < margin + 18) {
+        addPage();
+      }
+
+      page.drawRectangle({
+        x: margin,
+        y: y - rowHeight,
+        width: tableWidth,
+        height: rowHeight,
+        color: sectionBg,
+        borderColor: lineColor,
+        borderWidth: 0.7
+      });
+      drawText('Turma ' + (classCode || 'Sem turma'), margin + 8, y - 14.8, 10.2, {
+        font: boldFont,
+        color: accent
+      });
+      y -= rowHeight;
+    }
+
+    function drawRow(student, index, layout) {
+      var rowLayout = layout || getRowLayout(student);
+      var rowHeight = rowLayout.rowHeight;
+
+      if (y - rowHeight < margin + 18) {
+        addPage();
+      }
+
+      var x = margin;
+      var rowY = y - rowHeight;
+      if (index % 2 === 1) {
+        page.drawRectangle({
+          x: margin,
+          y: rowY,
+          width: tableWidth,
+          height: rowHeight,
+          color: zebraBg
+        });
+      }
+
+      columns.forEach(function (column, columnIndex) {
+        page.drawRectangle({
+          x: x,
+          y: rowY,
+          width: column.width,
+          height: rowHeight,
+          borderColor: lineColor,
+          borderWidth: 0.5
+        });
+        rowLayout.wrapped[columnIndex].forEach(function (line, lineIndex) {
+          drawText(
+            line,
+            x + rowLayout.paddingX,
+            y - rowLayout.paddingTop - rowLayout.fontSize - (lineIndex * rowLayout.lineHeight),
+            rowLayout.fontSize
+          );
+        });
+        x += column.width;
+      });
+
+      y -= rowHeight;
+    }
+
+    addPage();
+    var sortedStudents = sortGradeStudents(students);
+    var classList = sortedStudents.map(function (student) {
+      return String(student.classCode || '').trim();
+    }).filter(Boolean);
+    var showClassBreaks = Array.from(new Set(classList)).length > 1;
+    var currentClassCode = null;
+    sortedStudents.forEach(function (student, index) {
+      var classCode = String(student.classCode || '').trim();
+      var layout = getRowLayout(student);
+      if (showClassBreaks && classCode !== currentClassCode) {
+        drawClassBreak(classCode, layout.rowHeight);
+        currentClassCode = classCode;
+      }
+      drawRow(student, index, layout);
+    });
+
+    pdfDoc.getPages().forEach(function (pdfPage, idx) {
+      var label = 'Pagina ' + (idx + 1) + ' / ' + pdfDoc.getPageCount();
+      pdfPage.drawText(label, {
+        x: pageWidth - margin - font.widthOfTextAtSize(label, 8.5),
+        y: 18,
+        size: 8.5,
+        font: font,
+        color: mutedColor
+      });
+    });
+
+    var pdfBytes = await pdfDoc.save();
+    return new Blob([pdfBytes], { type: 'application/pdf' });
   }
 
   function downloadBlob(blob, filename) {
@@ -6072,7 +6353,9 @@
         const b64 = btoa(String.fromCharCode.apply(null, combined))
           .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 
-        const shareUrl = window.location.origin + window.location.pathname + '#grades=' + b64;
+        const shareUrl = window.location.origin + window.location.pathname + '?grades=' + encodeURIComponent(b64);
+        const shortShareLink = await shortenUrl(shareUrl);
+        const visibleShareUrl = shortShareLink.url;
 
         let popup = document.getElementById('grades-share-popup');
         if (!popup) {
@@ -6082,7 +6365,10 @@
           document.body.appendChild(popup);
         }
 
-        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(shareUrl);
+        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(visibleShareUrl);
+        const shareMeta = shortShareLink.shortened
+          ? 'Link curto direto via ' + shortShareLink.service + '.'
+          : 'Encurtador indisponivel: a usar link direto.';
 
         popup.innerHTML = [
           '<div style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius-lg); width: 90%; max-width: 480px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); text-align: center; position: relative;">',
@@ -6093,10 +6379,10 @@
           '<img src="' + qrUrl + '" alt="QR Code" style="border: 4px solid white; border-radius: var(--radius); box-shadow: var(--shadow-sm); width: 150px; height: 150px;" />',
           '</div>',
           '<div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">',
-          '<input type="text" id="share-link-input" value="' + shareUrl + '" readonly style="flex: 1; padding: 0.45rem 0.75rem; font-size: 0.78rem; border-radius: 6px; border: 1px solid var(--border); outline: none; background: var(--surface-2); color: var(--text);" />',
+          '<input type="text" id="share-link-input" value="' + escapeHtml(visibleShareUrl) + '" readonly style="flex: 1; padding: 0.45rem 0.75rem; font-size: 0.78rem; border-radius: 6px; border: 1px solid var(--border); outline: none; background: var(--surface-2); color: var(--text);" />',
           '<button onclick="window.copyShareLink()" class="btn btn--sm" style="padding: 0.45rem 0.9rem; font-size: 0.78rem; font-weight: 600; cursor: pointer;">Copiar</button>',
           '</div>',
-          '<span id="share-copy-status" style="font-size: 0.7rem; color: var(--accent-mid); display: block; height: 15px; margin-top: 2px;"></span>',
+          '<span id="share-copy-status" style="font-size: 0.7rem; color: var(--accent-mid); display: block; min-height: 15px; margin-top: 2px;">' + escapeHtml(shareMeta) + '</span>',
           '</div>'
         ].join('');
 
@@ -6140,11 +6426,22 @@ function initLanguage() {
           curriculum: { label: 'Curriculum', href: '../../en/curriculum/' },
           tools: { label: 'Tools', href: '../' },
         }
+      },
+      es: {
+        burgerLabel: 'Abrir menú',
+        nav: {
+          logoHref: '../../es/',
+          home: { label: 'Inicio', href: '../../es/' },
+          projects: { label: 'Proyectos', href: '../../es/proyectos/' },
+          curriculum: { label: 'Currículum', href: '../../es/curriculum/' },
+          tools: { label: 'Herramientas', href: '../' },
+        }
       }
     };
 
     const langPtBtn = document.getElementById('scLangPt');
     const langEnBtn = document.getElementById('scLangEn');
+    const langEsBtn = document.getElementById('scLangEs');
 
     function updateHeaderLanguage(lang) {
       const copy = LOCALE_COPY[lang] || LOCALE_COPY.pt;
@@ -6155,6 +6452,7 @@ function initLanguage() {
       const tools = document.getElementById('scNavTools');
       const burger = document.getElementById('navBurger');
 
+      document.documentElement.lang = lang;
       if (logo) logo.href = copy.nav.logoHref;
       if (home) {
         home.textContent = copy.nav.home.label;
@@ -6184,6 +6482,10 @@ function initLanguage() {
         langEnBtn.classList.toggle('nav__lang-btn--active', lang === 'en');
         langEnBtn.setAttribute('aria-pressed', lang === 'en' ? 'true' : 'false');
       }
+      if (langEsBtn) {
+        langEsBtn.classList.toggle('nav__lang-btn--active', lang === 'es');
+        langEsBtn.setAttribute('aria-pressed', lang === 'es' ? 'true' : 'false');
+      }
       updateHeaderLanguage(lang);
     }
 
@@ -6191,6 +6493,7 @@ function initLanguage() {
     try {
       currentLang = localStorage.getItem('lang-pref') || localStorage.getItem('secretPageLocale') || 'pt';
     } catch (_) {}
+    if (!LOCALE_COPY[currentLang]) currentLang = 'pt';
 
     updateLangButtons(currentLang);
 
@@ -6213,6 +6516,16 @@ function initLanguage() {
         updateLangButtons('en');
       });
     }
+
+    if (langEsBtn) {
+      langEsBtn.addEventListener('click', () => {
+        try {
+          localStorage.setItem('lang-pref', 'es');
+          localStorage.setItem('secretPageLocale', 'es');
+        } catch (_) {}
+        updateLangButtons('es');
+      });
+    }
   }
 
   function init() {
@@ -6221,12 +6534,13 @@ function initLanguage() {
     setActiveTool(tools[0].id);
     renderResults();
     setProgress(0, 'Pronto para processar', 'Aguardando ação.');
-    loadDynamicCobaltInstances();
     
-    // Check for shared grades link in URL fragment (#grades=<compressed_base64>)
+    // Check for shared grades links. New links use ?grades= so URL shorteners can preserve the data.
+    const gradesParam = new URLSearchParams(window.location.search).get('grades');
     const hashMatch = window.location.hash.match(/^#grades=(.+)$/);
-    if (hashMatch) {
-      showSharedGrades(hashMatch[1]);
+    const sharedGradesPayload = gradesParam || (hashMatch ? hashMatch[1] : '');
+    if (sharedGradesPayload) {
+      showSharedGrades(sharedGradesPayload);
     }
   }
 

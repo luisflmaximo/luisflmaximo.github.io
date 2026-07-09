@@ -5,6 +5,27 @@
 (function () {
   'use strict';
 
+  const SECRET_ACCESS_KEY = 'lm-secret-access-granted';
+
+  function hasSecretAccess() {
+    try {
+      if (localStorage.getItem(SECRET_ACCESS_KEY) === '1') return true;
+    } catch (_) {}
+    return document.cookie.split(';').some(function (item) {
+      return item.trim() === SECRET_ACCESS_KEY + '=1';
+    });
+  }
+
+  function grantSecretAccess() {
+    try { localStorage.setItem(SECRET_ACCESS_KEY, '1'); } catch (_) {}
+    document.cookie = SECRET_ACCESS_KEY + '=1; Max-Age=31536000; Path=/; SameSite=Lax';
+    document.documentElement.classList.add('secret-access-granted');
+  }
+
+  if (hasSecretAccess()) {
+    document.documentElement.classList.add('secret-access-granted');
+  }
+
   /* ── Nav scroll class ── */
   const nav = document.getElementById('nav');
   if (nav) {
@@ -56,6 +77,7 @@
       if (count === 7) {
         count = 0;
         clearTimeout(timer);
+        grantSecretAccess();
         window.location.href = new URL('../secret/', window.location.href).toString();
         return;
       }

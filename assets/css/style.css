@@ -251,7 +251,8 @@ select:focus-visible,
 }
 /* Secret tab — hidden by default; JS removes [hidden] attr to reveal */
 .nav__secret-link { display: none; }
-.nav__secret-link:not([hidden]) { display: block; }
+html.secret-access-granted .nav__secret-link:not([hidden]),
+html.secret-page .nav__secret-link:not([hidden]) { display: block; }
 
 .nav__right {
   display: flex;
