@@ -133,6 +133,13 @@
   </footer>
   <script>
     (function () {
+      var currentPath = window.location.pathname || '/';
+      if (currentPath.toLowerCase().startsWith('/portefolio/')) {
+        var migratedPath = currentPath.slice('/portefolio'.length) || '/';
+        window.location.replace(migratedPath + window.location.search + window.location.hash);
+        return;
+      }
+
       var basePath = '/';
       var copy = {
         pt: {
