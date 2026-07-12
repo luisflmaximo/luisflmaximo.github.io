@@ -3,4 +3,4 @@ Allow: /
 Disallow: /cloudflare/
 Disallow: /*.py$
 
-Sitemap: https://luisflmaximo.github.io/portefolio/sitemap.xml
+Sitemap: https://luisflmaximo.github.io/sitemap.xml

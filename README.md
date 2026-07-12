@@ -1,8 +1,8 @@
-# Luís Máximo — Portefólio Pessoal
+# Luís Filipe Lopes Máximo — Portefólio Pessoal
 
-Site pessoal de portefólio, currículo e projetos de Luís Máximo, estudante de Gestão na [ISCTE Business School](https://ibs.iscte-iul.pt/), Lisboa.
+Site pessoal de portefólio, currículo e projetos de Luís Filipe Lopes Máximo, conhecido como Luís Máximo, estudante de Gestão na [ISCTE Business School](https://ibs.iscte-iul.pt/), Lisboa.
 
-[luisflmaximo.github.io/portefolio](https://luisflmaximo.github.io/portefolio/)
+[luisflmaximo.github.io](https://luisflmaximo.github.io/)
 
 ## Sobre
 
@@ -33,7 +33,7 @@ Percurso académico, competências, experiências relevantes e ligação para do
 | Característica | Detalhe |
 |---|---|
 | Idiomas | PT · EN · ES |
-| Redirecionamento | Preferência guardada ou idioma do browser |
+| Redirecionamento | Preferência guardada; português como idioma predefinido |
 | SEO | Schema.org / JSON-LD · Open Graph · Twitter Cards · Sitemap XML · robots.txt · hreflang |
 | PWA | `site.webmanifest`, ícones e atalhos |
 | Embeds | LinkedIn e Instagram carregados de forma diferida |
@@ -46,7 +46,7 @@ Percurso académico, competências, experiências relevantes e ligação para do
 ## Estrutura Pública
 
 ```text
-portefolio/
+luisflmaximo.github.io/
 ├── index.html
 ├── 404.html
 ├── robots.txt
@@ -73,7 +73,9 @@ Os dados públicos de SEO e alternates estão resumidos em `docs/seo-public.json
 
 O `sitemap.xml` lista as páginas públicas indexáveis em PT, EN e ES, incluindo o visualizador público do projeto Super Bock. O `robots.txt` mantém o crawl aberto para as páginas públicas, bloqueando apenas ficheiros auxiliares que não fazem parte da experiência pública.
 
-Quando `assets/css/style.css` ou `assets/js/main.js` mudam, os links HTML usam uma query string de versão, como `?v=20260709-secret1`, para evitar cache antiga no GitHub Pages. Como esses ficheiros são globais, a mesma versão aparece em todas as páginas que os carregam.
+A página portuguesa é a versão predefinida (`x-default`) e a raiz consolida nela através de `canonical`. A área de ferramentas usa `noindex` e não é ligada no HTML público; a ligação só é criada no browser após o desbloqueio local.
+
+Quando `assets/css/style.css` ou `assets/js/main.js` mudam, os links HTML usam uma query string de versão, como `?v=20260712-seo1`, para evitar cache antiga no GitHub Pages. Como esses ficheiros são globais, a mesma versão aparece em todas as páginas que os carregam.
 
 ## Contacto
 

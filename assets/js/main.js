@@ -6,6 +6,22 @@
   'use strict';
 
   const SECRET_ACCESS_KEY = 'lm-secret-access-granted';
+  const MAIN_SCRIPT_URL = document.currentScript ? document.currentScript.src : '';
+
+  function revealSecretNavigation() {
+    const links = document.getElementById('navLinks');
+    if (!links || links.querySelector('.nav__secret-link')) return;
+
+    const lang = (document.documentElement.lang || 'pt').slice(0, 2).toLowerCase();
+    const labels = { pt: 'Ferramentas', en: 'Tools', es: 'Herramientas' };
+    const link = document.createElement('a');
+    link.className = 'nav__link nav__secret-link';
+    link.href = MAIN_SCRIPT_URL
+      ? new URL('../../secret/', MAIN_SCRIPT_URL).toString()
+      : '/secret/';
+    link.textContent = labels[lang] || labels.pt;
+    links.appendChild(link);
+  }
 
   function hasSecretAccess() {
     try {
@@ -20,10 +36,12 @@
     try { localStorage.setItem(SECRET_ACCESS_KEY, '1'); } catch (_) {}
     document.cookie = SECRET_ACCESS_KEY + '=1; Max-Age=31536000; Path=/; SameSite=Lax';
     document.documentElement.classList.add('secret-access-granted');
+    revealSecretNavigation();
   }
 
   if (hasSecretAccess()) {
     document.documentElement.classList.add('secret-access-granted');
+    revealSecretNavigation();
   }
 
   /* ── Nav scroll class ── */

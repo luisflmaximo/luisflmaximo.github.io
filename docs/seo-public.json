@@ -1,18 +1,21 @@
 {
-  "siteName": "Luis Filipe Lopes Maximo",
-  "baseUrl": "https://luisflmaximo.github.io/portefolio/",
+  "siteName": "Luís Máximo",
+  "baseUrl": "https://luisflmaximo.github.io/",
   "person": {
-    "name": "Luis Filipe Lopes Maximo",
-    "displayName": "Luis Maximo",
+    "name": "Luís Filipe Lopes Máximo",
+    "displayName": "Luís Máximo",
     "alternateNames": [
+      "Luís Máximo",
       "Luis Maximo",
-      "Luis Filipe Lopes Maximo"
+      "Luis Filipe Lopes Maximo",
+      "@luisflmaximo"
     ],
     "sameAs": [
       "https://www.linkedin.com/in/luisflmaximo/",
       "https://www.instagram.com/luisflmaximo/",
       "https://x.com/luisflmaximo",
-      "https://www.facebook.com/luisflmaximo"
+      "https://www.facebook.com/luisflmaximo",
+      "https://github.com/luisflmaximo"
     ]
   },
   "languages": {
