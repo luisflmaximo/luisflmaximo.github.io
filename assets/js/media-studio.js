@@ -1075,7 +1075,7 @@
         }
       ],
       kind: 'pdf-heavy',
-      processor: processStudentGrades,
+      processor: processStudentGradesRobust,
     },
   ];
 
@@ -5784,6 +5784,233 @@
     setTimeout(function () {
       URL.revokeObjectURL(url);
     }, 1000);
+  }
+
+  async function processStudentGradesRobust(files, options) {
+    if (files.length < 1) {
+      throw new Error('Por favor, carregue pelo menos 1 ficheiro de notas.');
+    }
+
+    const targetClassFilter = String(options.gradesTargetClass || 'all_gestao');
+    const pdfjs = await ensurePdfJs();
+    const gradeParser = window.GradeParser;
+    if (!gradeParser) {
+      throw new Error('O analisador de pautas nao foi carregado. Atualize a pagina e tente novamente.');
+    }
+
+    const studentsDb = Object.assign({}, STUDENT_DATABASE);
+    const extractedRecords = [];
+    const gradeDetectedNumbers = new Set();
+    let pagesWithoutText = 0;
+
+    for (let fileIndex = 0; fileIndex < files.length; fileIndex += 1) {
+      const file = files[fileIndex];
+      setProgress(5 + (fileIndex / files.length) * 70, 'A reconhecer alunos e notas', file.name);
+
+      const fileBytes = new Uint8Array(await file.arrayBuffer());
+      const pdf = await pdfjs.getDocument({ data: fileBytes }).promise;
+
+      for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex += 1) {
+        const page = await pdf.getPage(pageIndex);
+        const textContent = await page.getTextContent();
+        const hasText = textContent.items.some(function (item) {
+          return String(item.str || '').trim();
+        });
+        if (!hasText) {
+          pagesWithoutText += 1;
+          continue;
+        }
+
+        const rows = gradeParser.groupTextItemsIntoRows(textContent.items);
+        const pageRecords = gradeParser.extractRecordsFromRows(rows, {
+          name: file.name,
+          page: pageIndex
+        });
+
+        pageRecords.forEach(function (record) {
+          if (record.inlineName && record.inlineClassCode) {
+            studentsDb[record.num] = {
+              name: record.inlineName,
+              classCode: record.inlineClassCode
+            };
+          }
+          if (record.isGradeRow) {
+            gradeDetectedNumbers.add(record.num);
+            extractedRecords.push(record);
+          }
+        });
+      }
+    }
+
+    if (!gradeDetectedNumbers.size && pagesWithoutText > 0) {
+      throw new Error('O PDF nao contem texto selecionavel. Use um PDF com OCR ou exportado diretamente pelo sistema de notas.');
+    }
+    if (!gradeDetectedNumbers.size) {
+      throw new Error('Nao foi encontrada nenhuma linha com numero de aluno e nota. Confirme se o PDF contem uma pauta.');
+    }
+
+    const allMatches = {};
+    const unmatchedNumbers = new Set();
+    const filteredNumbers = new Set();
+
+    extractedRecords.forEach(function (record) {
+      const dbInfo = studentsDb[record.num];
+      if (!dbInfo || !dbInfo.name || !dbInfo.classCode) {
+        unmatchedNumbers.add(record.num);
+        return;
+      }
+
+      if (targetClassFilter === 'all_gestao' && !gradeParser.isManagementClass(dbInfo.classCode)) {
+        filteredNumbers.add(record.num);
+        return;
+      }
+
+      const details = gradeParser.formatDetails(record, dbInfo.name);
+      if (!allMatches[record.num]) {
+        allMatches[record.num] = {
+          num: record.num,
+          name: dbInfo.name,
+          classCode: dbInfo.classCode,
+          detailsList: []
+        };
+      }
+      if (!allMatches[record.num].detailsList.includes(details)) {
+        allMatches[record.num].detailsList.push(details);
+      }
+    });
+
+    const grouped = {};
+    const matchesArray = Object.values(allMatches);
+    matchesArray.forEach(function (row) {
+      row.details = row.detailsList.join(' | ') || 'Sem resultado legivel';
+      if (!grouped[row.classCode]) grouped[row.classCode] = [];
+      grouped[row.classCode].push(row);
+    });
+
+    const detectedClasses = Object.keys(grouped).sort();
+    if (!detectedClasses.length) {
+      throw new Error(
+        'Foram lidos ' + gradeDetectedNumbers.size + ' numeros de aluno, mas nenhum pertence as turmas selecionadas. ' +
+        unmatchedNumbers.size + ' nao tem nome e turma na base atual.'
+      );
+    }
+
+    const allResultsAreNa = matchesArray.every(function (row) {
+      return row.detailsList.length && row.detailsList.every(function (details) {
+        return details.split('|').every(function (part) {
+          return /:\s*N\/A\s*$/i.test(part.trim());
+        });
+      });
+    });
+    const diagnostics = {
+      detected: gradeDetectedNumbers.size,
+      matched: matchesArray.length,
+      unmatched: unmatchedNumbers.size,
+      filtered: filteredNumbers.size,
+      pagesWithoutText: pagesWithoutText,
+      allResultsAreNa: allResultsAreNa
+    };
+
+    setProgress(80, 'A gerar PDFs', 'A preparar pautas por turma...');
+    const zip = new window.JSZip();
+    let allStudentsForPdf = [];
+
+    for (let classIndex = 0; classIndex < detectedClasses.length; classIndex += 1) {
+      const classCode = detectedClasses[classIndex];
+      const students = grouped[classCode];
+      students.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      setProgress(80 + (classIndex / detectedClasses.length) * 14, 'A gerar PDFs', 'Turma ' + classCode);
+      allStudentsForPdf = allStudentsForPdf.concat(students);
+
+      const classPdfBlob = await createGradesPdfBlob(
+        'Pauta de Notas - Turma ' + classCode,
+        students.length + ' alunos',
+        students
+      );
+      zip.file('Turma_' + classCode + '.pdf', classPdfBlob);
+    }
+
+    setProgress(95, 'A gerar PDF global', 'Todas as turmas detetadas...');
+    const globalPdfBlob = await createGradesPdfBlob(
+      'Pauta de Notas - Todas as Turmas',
+      'Turmas: ' + detectedClasses.join(', ') + ' | Total: ' + allStudentsForPdf.length + ' alunos',
+      allStudentsForPdf
+    );
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+    window.lastProcessedGrades = {
+      detectedClasses: detectedClasses,
+      grouped: grouped,
+      diagnostics: diagnostics
+    };
+
+    const dashboardId = 'db_' + Date.now();
+    const tabsHtml = ['<button class="grades-tab active" onclick="window.switchGradesTab(this, \'all\', \'' + dashboardId + '\')">Todas</button>'];
+    const contentsHtml = [];
+    detectedClasses.forEach(function (classCode) {
+      tabsHtml.push('<button class="grades-tab" onclick="window.switchGradesTab(this, \'' + classCode + '\', \'' + dashboardId + '\')">' + classCode + '</button>');
+    });
+
+    detectedClasses.forEach(function (classCode) {
+      const students = grouped[classCode];
+      const rowsHtml = students.map(function (student) {
+        return '<tr class="grade-row" data-search="' + escapeHtml((student.num + ' ' + student.name).toLowerCase()) + '">' +
+          '<td>' + escapeHtml(student.num) + '</td>' +
+          '<td>' + escapeHtml(student.name) + '</td>' +
+          '<td>' + escapeHtml(student.classCode) + '</td>' +
+          '<td>' + escapeHtml(student.details) + '</td>' +
+          '</tr>';
+      }).join('');
+
+      contentsHtml.push(
+        '<div class="grades-table-wrapper" data-class="' + classCode + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;gap:.5rem;">' +
+        '<div style="font-weight:600;color:var(--accent-mid);">' + classCode + ' (' + students.length + ' alunos)</div>' +
+        '<button type="button" class="btn btn--outline btn--sm" onclick="window.downloadClassPdf(\'' + classCode + '\', \'' + dashboardId + '\', this)" style="padding:.25rem .6rem;font-size:.72rem;border-radius:4px;font-weight:600;cursor:pointer;border:1px solid var(--accent-mid);color:var(--accent-mid);background:transparent;">Descarregar PDF</button>' +
+        '</div>' +
+        '<table class="grades-table"><thead><tr><th>Numero</th><th>Nome</th><th>Turma</th><th>Nota/Detalhe</th></tr></thead>' +
+        '<tbody>' + rowsHtml + '</tbody></table></div>'
+      );
+    });
+
+    let recognitionSummary = 'Reconhecimento: ' + diagnostics.detected + ' numeros lidos; ' + diagnostics.matched + ' associados a nome e turma.';
+    if (diagnostics.unmatched) recognitionSummary += ' ' + diagnostics.unmatched + ' sem correspondencia foram omitidos.';
+    if (diagnostics.filtered) recognitionSummary += ' ' + diagnostics.filtered + ' pertencem a turmas fora do filtro.';
+    if (diagnostics.pagesWithoutText) recognitionSummary += ' ' + diagnostics.pagesWithoutText + ' paginas sem texto selecionavel.';
+    if (diagnostics.allResultsAreNa) recognitionSummary += ' Todas as correspondencias apresentam N/A no ficheiro de origem.';
+
+    const searchId = 'search_' + dashboardId;
+    const customHtml = [
+      '<div class="grades-dashboard" id="' + dashboardId + '" style="margin-top:1rem;">',
+      '<div style="padding:.8rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">',
+      '<div style="font-size:.85rem;font-weight:600;color:var(--text);">Painel de Notas por Turma</div>',
+      '<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">',
+      '<input type="text" id="' + searchId + '" placeholder="Pesquisar aluno..." oninput="window.filterGradesDashboard(this.value, \'' + dashboardId + '\')" style="padding:.35rem .75rem;font-size:.78rem;border-radius:6px;border:1px solid var(--border);outline:none;max-width:150px;background:var(--surface);color:var(--text);">',
+      '<button type="button" class="btn btn--outline btn--sm" onclick="window.downloadGlobalGradesPdf(\'' + dashboardId + '\', this)" style="padding:.35rem .75rem;font-size:.78rem;border-radius:6px;font-weight:600;cursor:pointer;border:1px solid var(--accent-mid);color:var(--accent-mid);background:transparent;">PDF global</button>',
+      '<button type="button" class="btn btn--outline btn--sm" onclick="window.shareGradesDashboard(\'db_placeholder\', this)" style="padding:.35rem .75rem;font-size:.78rem;border-radius:6px;font-weight:600;cursor:pointer;border:1px solid var(--accent-mid);color:var(--accent-mid);background:transparent;">Partilhar</button>',
+      '</div></div>',
+      '<div style="padding:.65rem 1rem;background:var(--surface-2);border-bottom:1px solid var(--border);font-size:.75rem;line-height:1.45;color:var(--text-muted);">' + escapeHtml(recognitionSummary) + '</div>',
+      '<div class="grades-tabs">' + tabsHtml.join('') + '</div>',
+      '<div class="grades-content" style="max-height:320px;overflow-y:auto;padding:1rem;">',
+      contentsHtml.join('<hr style="margin:1.5rem 0;border:none;border-top:1px dashed var(--border);" class="grades-divider">'),
+      '</div></div>'
+    ].join('');
+
+    registerGradesGlobalHelpers();
+    addResults([
+      createBlobResult(
+        'Pauta_Todas_as_Turmas.pdf',
+        globalPdfBlob,
+        'PDF global com ' + allStudentsForPdf.length + ' correspondencias.'
+      ),
+      Object.assign(createBlobResult(
+        'Pautas_por_Turma.zip',
+        zipBlob,
+        'ZIP com um PDF por turma. Total: ' + allStudentsForPdf.length + ' correspondencias.'
+      ), {
+        customHtml: customHtml.replace('db_placeholder', dashboardId)
+      })
+    ]);
   }
 
   async function processStudentGrades(files, options) {
