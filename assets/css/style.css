@@ -55,12 +55,13 @@ html {
   height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--text-light);
   border-radius: var(--radius);
-  border: 2.5px solid var(--bg);
+  border: 2.5px solid transparent;
+  background-clip: padding-box;
   transition: background var(--transition);
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -189,7 +190,9 @@ select:focus-visible,
    ================================================================ */
 .nav {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
   z-index: 100;
   height: var(--nav-h);
   background: rgba(240, 237, 229, 0.92);
