@@ -1168,7 +1168,7 @@
 /* Compact feedback for clipboard and editor actions */
 .studio-toasts {
   position: fixed;
-  top: calc(var(--header-height, 72px) + 0.9rem);
+  bottom: clamp(4.75rem, 10vh, 5.5rem);
   right: clamp(0.75rem, 2vw, 1.25rem);
   z-index: 10050;
   display: grid;
