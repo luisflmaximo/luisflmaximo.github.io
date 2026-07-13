@@ -21,6 +21,7 @@
     pdfJsPromise: null,
     visualEditor: {
       pdfDoc: null,
+      sourceFile: null,
       pageIndex: 1,
       scale: 1,
       pdfPage: null,
@@ -29,12 +30,14 @@
     },
     imageWatermark: {
       image: null,
+      sourceFile: null,
       scale: 1,
       elements: [],
       activeElement: null
     },
     bgRemove: {
       image: null,
+      sourceFile: null,
       maskCanvas: null,
       maskCtx: null,
       baseCanvas: null,
@@ -44,7 +47,16 @@
       brushMode: 'select-color',
       isDrawing: false,
       lastX: undefined,
-      lastY: undefined
+      lastY: undefined,
+      previewFrame: 0,
+      settingsTimer: 0,
+      previewNeedsCompose: true,
+      sourceCanvas: null,
+      sourceImageData: null,
+      baseImageData: null,
+      maskPreviewCanvas: null,
+      outputImageData: null,
+      compositeCanvas: null
     }
   };
 
@@ -56,6 +68,56 @@
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
   }
+
+  function showStudioToast(message, type, duration) {
+    let container = document.getElementById('studioToastRegion');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'studioToastRegion';
+      container.className = 'studio-toasts';
+      container.setAttribute('aria-live', 'polite');
+      container.setAttribute('aria-atomic', 'false');
+      document.body.appendChild(container);
+    }
+
+    const kind = type === 'error' ? 'error' : (type === 'info' ? 'info' : 'success');
+    const toast = document.createElement('div');
+    toast.className = 'studio-toast studio-toast--' + kind;
+    toast.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+
+    const icon = document.createElement('span');
+    icon.className = 'studio-toast__icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = kind === 'error' ? '!' : (kind === 'info' ? 'i' : '\u2713');
+
+    const text = document.createElement('span');
+    text.className = 'studio-toast__text';
+    text.textContent = String(message || '');
+    toast.appendChild(icon);
+    toast.appendChild(text);
+    container.appendChild(toast);
+
+    while (container.children.length > 3) {
+      container.firstElementChild.remove();
+    }
+
+    requestAnimationFrame(function () {
+      toast.classList.add('studio-toast--visible');
+    });
+
+    let removed = false;
+    const removeToast = function () {
+      if (removed) return;
+      removed = true;
+      toast.classList.remove('studio-toast--visible');
+      toast.addEventListener('transitionend', function () { toast.remove(); }, { once: true });
+      setTimeout(function () { toast.remove(); }, 350);
+    };
+    setTimeout(removeToast, Number(duration) || (kind === 'error' ? 4800 : 2600));
+    return removeToast;
+  }
+
+  window.showStudioToast = showStudioToast;
 
   function stem(filename) {
     const idx = filename.lastIndexOf('.');
@@ -166,6 +228,12 @@
     if (dynamicCobaltInstancesPromise) return dynamicCobaltInstancesPromise;
     dynamicCobaltInstancesPromise = loadDynamicCobaltInstancesOnce();
     return dynamicCobaltInstancesPromise;
+  }
+
+  function yieldToBrowser() {
+    return new Promise(function (resolve) {
+      requestAnimationFrame(function () { resolve(); });
+    });
   }
 
   async function loadDynamicCobaltInstancesOnce() {
@@ -1681,9 +1749,10 @@
   window.copyTextToClipboard = function(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function() {
-        alert('Link copiado para a área de transferência!');
+        showStudioToast('Link copiado.', 'success');
       }).catch(function(err) {
         console.error('Erro ao copiar link:', err);
+        showStudioToast('Não foi possível copiar o link.', 'error');
       });
     } else {
       const textarea = document.createElement('textarea');
@@ -1693,9 +1762,10 @@
       textarea.select();
       try {
         document.execCommand('copy');
-        alert('Link copiado para a área de transferência!');
+        showStudioToast('Link copiado.', 'success');
       } catch (err) {
         console.error('Erro ao copiar link:', err);
+        showStudioToast('Não foi possível copiar o link.', 'error');
       }
       document.body.removeChild(textarea);
     }
@@ -1703,6 +1773,9 @@
 
   window.copyImageToClipboard = async function(imageUrl) {
     try {
+      if (!navigator.clipboard || !navigator.clipboard.write || typeof ClipboardItem === 'undefined') {
+        throw new Error('A cópia de imagens não é suportada por este navegador.');
+      }
       const res = await fetch(imageUrl);
       if (!res.ok) throw new Error('Status ' + res.status);
       const blob = await res.blob();
@@ -1733,10 +1806,10 @@
           [pngBlob.type]: pngBlob
         })
       ]);
-      alert('Imagem copiada para a área de transferência!');
+      showStudioToast('Imagem copiada.', 'success');
     } catch (err) {
       console.warn('Não foi possível copiar a imagem programaticamente (CORS ou restrição do navegador).', err);
-      alert('Não foi possível copiar a imagem automaticamente devido a restrições de segurança do navegador ou do site original.\n\nDica: Clique com o botão direito do rato (ou mantenha pressionado) sobre a pré-visualização da imagem e selecione "Copiar imagem".');
+      showStudioToast('Não foi possível copiar. Usa o menu da imagem.', 'error');
     }
   };
 
@@ -2413,6 +2486,7 @@
     maskCtx.fillStyle = '#808080';
     maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
     state.bgRemove.hasEdits = false;
+    state.bgRemove.previewNeedsCompose = true;
     updateBgRemoveControlsUI();
     renderImageBgRemovePreview();
   }
@@ -2458,6 +2532,7 @@
     state.bgRemove.lastX = naturalX;
     state.bgRemove.lastY = naturalY;
     state.bgRemove.hasEdits = true;
+    state.bgRemove.previewNeedsCompose = true;
     updateBgRemoveControlsUI();
     renderImageBgRemovePreview();
   }
@@ -2490,23 +2565,15 @@
     renderImageBgRemovePreview();
   }
 
-  function composeBgRemoval(canvas, ctx, image, scale) {
+  function composeBgRemoval(canvas, ctx) {
     const w = canvas.width;
     const h = canvas.height;
 
-    const origCanvas = document.createElement('canvas');
-    origCanvas.width = w;
-    origCanvas.height = h;
-    const origCtx = origCanvas.getContext('2d');
-    origCtx.drawImage(image, 0, 0, w, h);
-    const origData = origCtx.getImageData(0, 0, w, h).data;
-
-    const baseData = state.bgRemove.baseCtx.getImageData(0, 0, w, h).data;
-
-    const maskTempCanvas = document.createElement('canvas');
-    maskTempCanvas.width = w;
-    maskTempCanvas.height = h;
-    const maskTempCtx = maskTempCanvas.getContext('2d');
+    const origData = state.bgRemove.sourceImageData.data;
+    const baseData = state.bgRemove.baseImageData.data;
+    const maskTempCanvas = state.bgRemove.maskPreviewCanvas;
+    const maskTempCtx = maskTempCanvas.getContext('2d', { willReadFrequently: true });
+    maskTempCtx.clearRect(0, 0, w, h);
     if (state.bgRemove.maskCanvas) {
       maskTempCtx.drawImage(state.bgRemove.maskCanvas, 0, 0, w, h);
     } else {
@@ -2515,7 +2582,10 @@
     }
     const maskData = maskTempCtx.getImageData(0, 0, w, h).data;
 
-    const outImgData = ctx.createImageData(w, h);
+    if (!state.bgRemove.outputImageData || state.bgRemove.outputImageData.width !== w || state.bgRemove.outputImageData.height !== h) {
+      state.bgRemove.outputImageData = ctx.createImageData(w, h);
+    }
+    const outImgData = state.bgRemove.outputImageData;
     const outData = outImgData.data;
 
     for (let i = 0; i < outData.length; i += 4) {
@@ -2544,21 +2614,30 @@
   async function initImageBgRemoveEditor() {
     if (!state.files.length || !refs.imageBgRemoveCanvas) return;
     try {
-      setRuntimeStatus('A carregar pré-visualização da imagem...');
       const file = state.files[0];
+      if (state.bgRemove.sourceFile === file && state.bgRemove.image) return;
+      setRuntimeStatus('A carregar pré-visualização da imagem...');
       const image = await loadImage(file);
       state.bgRemove.image = image;
+      state.bgRemove.sourceFile = file;
 
       const maskCanvas = document.createElement('canvas');
       maskCanvas.width = image.naturalWidth;
       maskCanvas.height = image.naturalHeight;
-      const maskCtx = maskCanvas.getContext('2d');
+      const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
       maskCtx.fillStyle = '#808080';
       maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
 
       state.bgRemove.maskCanvas = maskCanvas;
       state.bgRemove.maskCtx = maskCtx;
       state.bgRemove.baseNeedsUpdate = true;
+      state.bgRemove.previewNeedsCompose = true;
+      state.bgRemove.sourceCanvas = null;
+      state.bgRemove.sourceImageData = null;
+      state.bgRemove.baseImageData = null;
+      state.bgRemove.maskPreviewCanvas = null;
+      state.bgRemove.outputImageData = null;
+      state.bgRemove.compositeCanvas = null;
       state.bgRemove.hasEdits = false;
       state.bgRemove.brushMode = 'select-color';
 
@@ -2575,14 +2654,52 @@
   }
 
   function renderImageBgRemovePreview() {
+    if (state.bgRemove.previewFrame) return;
+    state.bgRemove.previewFrame = requestAnimationFrame(function () {
+      state.bgRemove.previewFrame = 0;
+      paintImageBgRemovePreview();
+    });
+  }
+
+  function paintImageBgRemovePreview() {
     const image = state.bgRemove.image;
     const canvas = refs.imageBgRemoveCanvas;
     if (!image || !canvas) return;
 
-    const maxWidth = 800;
-    const scale = Math.min(1.5, maxWidth / image.naturalWidth);
-    canvas.width = image.naturalWidth * scale;
-    canvas.height = image.naturalHeight * scale;
+    const containerWidth = canvas.parentElement ? canvas.parentElement.clientWidth : 800;
+    const maxWidth = Math.min(800, Math.max(1, containerWidth || 800));
+    const maxPixelScale = Math.sqrt(850000 / Math.max(1, image.naturalWidth * image.naturalHeight));
+    const scale = Math.min(1, maxWidth / image.naturalWidth, maxPixelScale);
+    const previewWidth = Math.max(1, Math.round(image.naturalWidth * scale));
+    const previewHeight = Math.max(1, Math.round(image.naturalHeight * scale));
+    const sizeChanged = canvas.width !== previewWidth || canvas.height !== previewHeight || !state.bgRemove.sourceCanvas;
+
+    if (sizeChanged) {
+      canvas.width = previewWidth;
+      canvas.height = previewHeight;
+
+      const sourceCanvas = document.createElement('canvas');
+      sourceCanvas.width = previewWidth;
+      sourceCanvas.height = previewHeight;
+      const sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+      sourceCtx.drawImage(image, 0, 0, previewWidth, previewHeight);
+
+      const maskPreviewCanvas = document.createElement('canvas');
+      maskPreviewCanvas.width = previewWidth;
+      maskPreviewCanvas.height = previewHeight;
+
+      const compositeCanvas = document.createElement('canvas');
+      compositeCanvas.width = previewWidth;
+      compositeCanvas.height = previewHeight;
+
+      state.bgRemove.sourceCanvas = sourceCanvas;
+      state.bgRemove.sourceImageData = sourceCtx.getImageData(0, 0, previewWidth, previewHeight);
+      state.bgRemove.maskPreviewCanvas = maskPreviewCanvas;
+      state.bgRemove.compositeCanvas = compositeCanvas;
+      state.bgRemove.outputImageData = null;
+      state.bgRemove.baseNeedsUpdate = true;
+      state.bgRemove.previewNeedsCompose = true;
+    }
 
     const ctx = canvas.getContext('2d');
 
@@ -2590,8 +2707,9 @@
       const baseCanvas = state.bgRemove.baseCanvas || document.createElement('canvas');
       baseCanvas.width = canvas.width;
       baseCanvas.height = canvas.height;
-      const baseCtx = baseCanvas.getContext('2d');
-      baseCtx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const baseCtx = baseCanvas.getContext('2d', { willReadFrequently: true });
+      baseCtx.clearRect(0, 0, canvas.width, canvas.height);
+      baseCtx.drawImage(state.bgRemove.sourceCanvas, 0, 0);
 
       const options = getOptions();
       const threshold = Number(options.bgThreshold || 32);
@@ -2614,10 +2732,19 @@
 
       state.bgRemove.baseCanvas = baseCanvas;
       state.bgRemove.baseCtx = baseCtx;
+      state.bgRemove.baseImageData = baseCtx.getImageData(0, 0, canvas.width, canvas.height);
       state.bgRemove.baseNeedsUpdate = false;
+      state.bgRemove.previewNeedsCompose = true;
     }
 
-    composeBgRemoval(canvas, ctx, image, scale);
+    if (state.bgRemove.previewNeedsCompose) {
+      const compositeCtx = state.bgRemove.compositeCanvas.getContext('2d');
+      composeBgRemoval(state.bgRemove.compositeCanvas, compositeCtx);
+      state.bgRemove.previewNeedsCompose = false;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(state.bgRemove.compositeCanvas, 0, 0);
 
     if (mouseX !== null && mouseY !== null && (state.bgRemove.brushMode === 'erase' || state.bgRemove.brushMode === 'restore')) {
       const brushSizeSelect = document.getElementById('bgRemoveBrushSize');
@@ -2640,13 +2767,17 @@
   async function initImageWatermarkEditor() {
     if (!state.files.length || !refs.imageWatermarkCanvas) return;
     try {
-      setRuntimeStatus('A carregar pré-visualização da imagem...');
       const file = state.files[0];
+      if (state.imageWatermark.sourceFile === file && state.imageWatermark.image) return;
+      setRuntimeStatus('A carregar pré-visualização da imagem...');
       const image = await loadImage(file);
       state.imageWatermark.image = image;
+      state.imageWatermark.sourceFile = file;
       
-      const maxWidth = 800;
-      const scale = Math.min(1.5, maxWidth / image.naturalWidth);
+      const containerWidth = refs.imageWatermarkCanvas.parentElement ? refs.imageWatermarkCanvas.parentElement.clientWidth : 800;
+      const maxWidth = Math.min(800, Math.max(1, containerWidth || 800));
+      const maxPixelScale = Math.sqrt(850000 / Math.max(1, image.naturalWidth * image.naturalHeight));
+      const scale = Math.min(1, maxWidth / image.naturalWidth, maxPixelScale);
       state.imageWatermark.scale = scale;
       
       refs.imageWatermarkCanvas.width = image.naturalWidth * scale;
@@ -2956,9 +3087,11 @@
     const pageIndex = Math.max(0, Math.min(state.visualEditor.pdfDoc.numPages - 1, state.visualEditor.pageIndex - 1));
     const page = await state.visualEditor.pdfDoc.getPage(pageIndex + 1);
     
-    // Calcula escala para caber na div (max 800px width aprox)
+    // Render only at the size the editor can display.
     const viewportUnscaled = page.getViewport({ scale: 1 });
-    const scale = Math.min(1.5, 800 / viewportUnscaled.width);
+    const editorContainer = refs.visualCanvas.closest('.visual-editor-container');
+    const availableWidth = Math.min(800, Math.max(1, editorContainer ? editorContainer.clientWidth : 800));
+    const scale = Math.min(1.35, availableWidth / viewportUnscaled.width);
     const viewport = page.getViewport({ scale: scale });
     
     state.visualEditor.scale = scale;
@@ -2974,11 +3107,13 @@
   async function initVisualEditor() {
     if (!state.files.length) return;
     try {
-      setRuntimeStatus('A carregar pré-visualização...');
       const file = state.files[0];
+      if (state.visualEditor.sourceFile === file && state.visualEditor.pdfDoc) return;
+      setRuntimeStatus('A carregar pré-visualização...');
       const srcBytes = new Uint8Array(await file.arrayBuffer());
       const pdfjs = await ensurePdfJs();
       state.visualEditor.pdfDoc = await pdfjs.getDocument({ data: srcBytes }).promise;
+      state.visualEditor.sourceFile = file;
       state.visualEditor.pageIndex = 1;
       
       if (refs.visualEditorPage) {
@@ -2999,21 +3134,31 @@
   }
 
   function makeDraggable(node) {
-    let isDown = false;
-    let startX = 0;
-    let startY = 0;
-    let initialX = 0;
-    let initialY = 0;
-    
-    node.addEventListener('mousedown', function (e) {
+    let drag = null;
+    let pendingPosition = null;
+    let moveFrame = 0;
+
+    const paintPosition = function () {
+      moveFrame = 0;
+      if (!pendingPosition) return;
+      node.style.left = pendingPosition.left + 'px';
+      node.style.top = pendingPosition.top + 'px';
+      pendingPosition = null;
+    };
+
+    node.style.touchAction = 'none';
+    node.addEventListener('pointerdown', function (e) {
       if (node.contentEditable === 'true') {
         return;
       }
-      isDown = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      initialX = node.offsetLeft;
-      initialY = node.offsetTop;
+      drag = {
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        initialX: node.offsetLeft,
+        initialY: node.offsetTop
+      };
+      node.setPointerCapture(e.pointerId);
       node.style.cursor = 'grabbing';
       e.preventDefault();
     });
@@ -3022,20 +3167,25 @@
       e.preventDefault();
     });
     
-    document.addEventListener('mousemove', function (e) {
-      if (!isDown) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      node.style.left = (initialX + dx) + 'px';
-      node.style.top = (initialY + dy) + 'px';
+    node.addEventListener('pointermove', function (e) {
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      pendingPosition = {
+        left: drag.initialX + e.clientX - drag.startX,
+        top: drag.initialY + e.clientY - drag.startY
+      };
+      if (!moveFrame) moveFrame = requestAnimationFrame(paintPosition);
     });
-    
-    document.addEventListener('mouseup', function () {
-      if (isDown) {
-        isDown = false;
-        node.style.cursor = 'grab';
-      }
-    });
+
+    const finishDrag = function (e) {
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      if (moveFrame) cancelAnimationFrame(moveFrame);
+      paintPosition();
+      if (node.hasPointerCapture(e.pointerId)) node.releasePointerCapture(e.pointerId);
+      drag = null;
+      node.style.cursor = 'grab';
+    };
+    node.addEventListener('pointerup', finishDrag);
+    node.addEventListener('pointercancel', finishDrag);
   }
 
   function rgbToHex(color) {
@@ -3278,7 +3428,8 @@
       const file = files[index];
       const image = await loadImage(file);
       const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const readsPixels = state.activeTool.id === 'image-enhance' || state.activeTool.id === 'image-bg-remove';
+      const ctx = canvas.getContext('2d', readsPixels ? { willReadFrequently: true } : undefined);
       let sx = 0;
       let sy = 0;
       let sw = image.naturalWidth;
@@ -3359,6 +3510,8 @@
       }
 
       if (state.activeTool.id === 'image-bg-remove') {
+        setRuntimeStatus('A processar a imagem em qualidade original...');
+        await yieldToBrowser();
         const mode = options.bgMode || 'flood';
         let targetColor = null;
         if (mode === 'white') {
@@ -3374,14 +3527,14 @@
           const baseCanvas = document.createElement('canvas');
           baseCanvas.width = outW;
           baseCanvas.height = outH;
-          const baseCtx = baseCanvas.getContext('2d');
+          const baseCtx = baseCanvas.getContext('2d', { willReadFrequently: true });
           baseCtx.drawImage(image, sx, sy, sw, sh, 0, 0, outW, outH);
           applyBackgroundRemoval(baseCtx, outW, outH, Number(options.bgThreshold || 32), Number(options.bgSoftness || 15), targetColor, Number(options.bgEdgeRefine || 40), Number(options.bgDenoise || 1), useFlood);
 
           const origCanvas = document.createElement('canvas');
           origCanvas.width = outW;
           origCanvas.height = outH;
-          const origCtx = origCanvas.getContext('2d');
+          const origCtx = origCanvas.getContext('2d', { willReadFrequently: true });
           origCtx.drawImage(image, sx, sy, sw, sh, 0, 0, outW, outH);
 
           const baseData = baseCtx.getImageData(0, 0, outW, outH).data;
@@ -3390,7 +3543,7 @@
           const maskTempCanvas = document.createElement('canvas');
           maskTempCanvas.width = outW;
           maskTempCanvas.height = outH;
-          const maskTempCtx = maskTempCanvas.getContext('2d');
+          const maskTempCtx = maskTempCanvas.getContext('2d', { willReadFrequently: true });
           maskTempCtx.drawImage(state.bgRemove.maskCanvas, 0, 0, outW, outH);
           const maskData = maskTempCtx.getImageData(0, 0, outW, outH).data;
 
@@ -4257,10 +4410,20 @@
       updateCounters();
     });
 
-    const handleOptionChange = function () {
+    const scheduleBackgroundOptionsPreview = function (immediate) {
       if (state.activeTool && state.activeTool.id === 'image-bg-remove') {
         state.bgRemove.baseNeedsUpdate = true;
-        renderImageBgRemovePreview();
+        state.bgRemove.previewNeedsCompose = true;
+        if (state.bgRemove.settingsTimer) clearTimeout(state.bgRemove.settingsTimer);
+        if (immediate) {
+          state.bgRemove.settingsTimer = 0;
+          renderImageBgRemovePreview();
+        } else {
+          state.bgRemove.settingsTimer = setTimeout(function () {
+            state.bgRemove.settingsTimer = 0;
+            renderImageBgRemovePreview();
+          }, 120);
+        }
       }
     };
 
@@ -4271,10 +4434,12 @@
         if (valueNode) valueNode.textContent = range.value;
       }
       updateCounters();
-      handleOptionChange();
+      scheduleBackgroundOptionsPreview(false);
     });
 
-    refs.toolOptions.addEventListener('change', handleOptionChange);
+    refs.toolOptions.addEventListener('change', function () {
+      scheduleBackgroundOptionsPreview(true);
+    });
 
     const brushModeSelect = document.getElementById('bgRemoveBrushMode');
     if (brushModeSelect) {
@@ -4301,29 +4466,27 @@
     }
 
     if (refs.imageBgRemoveCanvas) {
-      refs.imageBgRemoveCanvas.addEventListener('mousedown', function (event) {
+      refs.imageBgRemoveCanvas.style.touchAction = 'none';
+      refs.imageBgRemoveCanvas.addEventListener('pointerdown', function (event) {
         if (!state.bgRemove.image) return;
         const brushMode = state.bgRemove.brushMode || 'select-color';
         if (brushMode === 'erase' || brushMode === 'restore') {
           state.bgRemove.isDrawing = true;
+          refs.imageBgRemoveCanvas.setPointerCapture(event.pointerId);
           drawBrush(event, true);
         } else {
           // Select color mode
           const canvas = refs.imageBgRemoveCanvas;
           const rect = canvas.getBoundingClientRect();
-          const x = Math.floor((event.clientX - rect.left) * (canvas.width / rect.width));
-          const y = Math.floor((event.clientY - rect.top) * (canvas.height / rect.height));
+          const x = Math.max(0, Math.min(canvas.width - 1, Math.floor((event.clientX - rect.left) * (canvas.width / rect.width))));
+          const y = Math.max(0, Math.min(canvas.height - 1, Math.floor((event.clientY - rect.top) * (canvas.height / rect.height))));
 
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = canvas.width;
-          tempCanvas.height = canvas.height;
-          const tempCtx = tempCanvas.getContext('2d');
-          tempCtx.drawImage(state.bgRemove.image, 0, 0, tempCanvas.width, tempCanvas.height);
-
-          const pixel = tempCtx.getImageData(x, y, 1, 1).data;
-          const r = pixel[0];
-          const g = pixel[1];
-          const b = pixel[2];
+          const sourceData = state.bgRemove.sourceImageData && state.bgRemove.sourceImageData.data;
+          if (!sourceData) return;
+          const pixelOffset = (y * canvas.width + x) * 4;
+          const r = sourceData[pixelOffset];
+          const g = sourceData[pixelOffset + 1];
+          const b = sourceData[pixelOffset + 2];
 
           const rgbToHex = function (rVal, gVal, bVal) {
             const toHex = function (c) {
@@ -4345,17 +4508,23 @@
           }
 
           state.bgRemove.baseNeedsUpdate = true;
+          state.bgRemove.previewNeedsCompose = true;
           renderImageBgRemovePreview();
         }
+        event.preventDefault();
       });
 
-      refs.imageBgRemoveCanvas.addEventListener('mousemove', handleBgRemoveMouseMove);
-      refs.imageBgRemoveCanvas.addEventListener('mouseup', function () {
+      refs.imageBgRemoveCanvas.addEventListener('pointermove', handleBgRemoveMouseMove);
+      refs.imageBgRemoveCanvas.addEventListener('pointerup', function (event) {
         state.bgRemove.isDrawing = false;
         state.bgRemove.lastX = undefined;
         state.bgRemove.lastY = undefined;
+        if (refs.imageBgRemoveCanvas.hasPointerCapture(event.pointerId)) {
+          refs.imageBgRemoveCanvas.releasePointerCapture(event.pointerId);
+        }
       });
-      refs.imageBgRemoveCanvas.addEventListener('mouseleave', handleBgRemoveMouseLeave);
+      refs.imageBgRemoveCanvas.addEventListener('pointercancel', handleBgRemoveMouseLeave);
+      refs.imageBgRemoveCanvas.addEventListener('pointerleave', handleBgRemoveMouseLeave);
     }
 
     refs.dropZone.addEventListener('dragenter', function (event) {

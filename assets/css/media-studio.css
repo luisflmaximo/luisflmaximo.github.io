@@ -1165,5 +1165,85 @@
   font-size: 0.85rem;
 }
 
+/* Compact feedback for clipboard and editor actions */
+.studio-toasts {
+  position: fixed;
+  top: calc(var(--header-height, 72px) + 0.9rem);
+  right: clamp(0.75rem, 2vw, 1.25rem);
+  z-index: 10050;
+  display: grid;
+  gap: 0.55rem;
+  width: min(22rem, calc(100vw - 1.5rem));
+  pointer-events: none;
+}
+
+.studio-toast {
+  display: grid;
+  grid-template-columns: 1.65rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-mid);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.98);
+  color: var(--text);
+  box-shadow: 0 12px 30px rgba(27, 45, 37, 0.16);
+  opacity: 0;
+  transform: translateX(1rem);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.studio-toast--visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.studio-toast--error {
+  border-left-color: #a8403c;
+}
+
+.studio-toast--info {
+  border-left-color: #3f6680;
+}
+
+.studio-toast__icon {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-mid);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.studio-toast--error .studio-toast__icon {
+  background: #f8e8e6;
+  color: #8f302d;
+}
+
+.studio-toast--info .studio-toast__icon {
+  background: #e7eff4;
+  color: #315970;
+}
+
+.studio-toast__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-toast {
+    transition: opacity 0.01ms linear;
+    transform: none;
+  }
+}
+
 
 
