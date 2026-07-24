@@ -63,6 +63,30 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://luisflmaximo.github.io/pt/projetos/" />
   </url>
   <url>
+    <loc>https://luisflmaximo.github.io/pt/projetos/politiza-te/</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://luisflmaximo.github.io/pt/projetos/troca-resposta/</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://luisflmaximo.github.io/pt/projetos/noticias-de-ontem/</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://luisflmaximo.github.io/pt/projetos/politometro/</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://luisflmaximo.github.io/es/proyectos/</loc>
     <lastmod>2026-07-18</lastmod>
     <changefreq>monthly</changefreq>

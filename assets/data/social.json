@@ -1,0 +1,37 @@
+{
+  "instagram": {
+    "projects": {
+      "politiza-te": {
+        "username": "politiza.te",
+        "followers": null,
+        "updatedAt": null
+      },
+      "troca-resposta": {
+        "username": "trocaresposta",
+        "followers": null,
+        "updatedAt": null
+      },
+      "noticias-de-ontem": {
+        "username": "noticiasdeontem.pt",
+        "followers": null,
+        "updatedAt": null
+      },
+      "politometro": {
+        "username": "politometro.pt",
+        "followers": null,
+        "updatedAt": null
+      }
+    }
+  },
+  "linkedin": {
+    "posts": [
+      {
+        "id": "urn:li:ugcPost:7444481713419767808",
+        "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7444481713419767808/",
+        "embedUrl": "https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7444481713419767808",
+        "publishedAt": null
+      }
+    ],
+    "updatedAt": null
+  }
+}

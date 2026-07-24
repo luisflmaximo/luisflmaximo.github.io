@@ -1,0 +1,52 @@
+name: Atualizar métricas sociais
+
+on:
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-social-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter o site
+        uses: actions/checkout@v6
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Atualizar Instagram e LinkedIn
+        env:
+          IG_USER_ID_POLITIZA_TE: ${{ secrets.IG_USER_ID_POLITIZA_TE }}
+          IG_ACCESS_TOKEN_POLITIZA_TE: ${{ secrets.IG_ACCESS_TOKEN_POLITIZA_TE }}
+          IG_USER_ID_TROCA_RESPOSTA: ${{ secrets.IG_USER_ID_TROCA_RESPOSTA }}
+          IG_ACCESS_TOKEN_TROCA_RESPOSTA: ${{ secrets.IG_ACCESS_TOKEN_TROCA_RESPOSTA }}
+          IG_USER_ID_NOTICIAS_DE_ONTEM: ${{ secrets.IG_USER_ID_NOTICIAS_DE_ONTEM }}
+          IG_ACCESS_TOKEN_NOTICIAS_DE_ONTEM: ${{ secrets.IG_ACCESS_TOKEN_NOTICIAS_DE_ONTEM }}
+          IG_USER_ID_POLITOMETRO: ${{ secrets.IG_USER_ID_POLITOMETRO }}
+          IG_ACCESS_TOKEN_POLITOMETRO: ${{ secrets.IG_ACCESS_TOKEN_POLITOMETRO }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_AUTHOR_URN: ${{ secrets.LINKEDIN_AUTHOR_URN }}
+        run: node scripts/update-social-data.mjs
+
+      - name: Guardar valores atualizados
+        run: |
+          if git diff --quiet -- assets/data/social.json; then
+            echo "Sem alterações."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/data/social.json
+          git commit -m "chore: atualizar métricas sociais"
+          git push
