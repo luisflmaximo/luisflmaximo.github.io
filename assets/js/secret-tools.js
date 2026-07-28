@@ -43,6 +43,19 @@
       copyButton: 'Copiar Conteúdo',
       copied: 'Copiado!',
       sourceLink: 'Ver Fonte Original',
+      application: {
+        upcoming: 'Abre em breve',
+        open: 'Candidaturas abertas',
+        endingSoon: 'A terminar',
+        closed: 'Candidaturas encerradas',
+        announcedLater: 'Datas por anunciar',
+        automatic: 'Sem candidatura direta',
+        notApplicable: 'Sem período anual',
+        interval: 'Intervalo',
+        announcedLaterInterval: 'por anunciar para {year}',
+        automaticInterval: 'não aplicável — atribuição pela instituição',
+        notApplicableInterval: 'registo disponível durante todo o ano',
+      },
     },
     en: {
       title: 'Tools — Luís Máximo',
@@ -78,6 +91,19 @@
       copyButton: 'Copy Content',
       copied: 'Copied!',
       sourceLink: 'View Original Source',
+      application: {
+        upcoming: 'Opens soon',
+        open: 'Applications open',
+        endingSoon: 'Ending soon',
+        closed: 'Applications closed',
+        announcedLater: 'Dates to be announced',
+        automatic: 'No direct application',
+        notApplicable: 'No annual application window',
+        interval: 'Application window',
+        announcedLaterInterval: 'to be announced for {year}',
+        automaticInterval: 'not applicable — awarded by the institution',
+        notApplicableInterval: 'registration available all year',
+      },
     },
     es: {
       title: 'Herramientas — Luís Máximo',
@@ -113,6 +139,19 @@
       copyButton: 'Copiar contenido',
       copied: 'Copiado!',
       sourceLink: 'Ver fuente original',
+      application: {
+        upcoming: 'Abre próximamente',
+        open: 'Candidaturas abiertas',
+        endingSoon: 'Termina pronto',
+        closed: 'Candidaturas cerradas',
+        announcedLater: 'Fechas por anunciar',
+        automatic: 'Sin candidatura directa',
+        notApplicable: 'Sin periodo anual',
+        interval: 'Periodo de candidatura',
+        announcedLaterInterval: 'por anunciar para {year}',
+        automaticInterval: 'no aplicable — concesión por la institución',
+        notApplicableInterval: 'registro disponible durante todo el año',
+      },
     },
   };
 
@@ -415,15 +454,42 @@
     };
   }
 
-  function buildSearchText(card, source) {
+  function normalizeApplication(application) {
+    if (!application) return null;
+
+    const allowedModes = ['fixed', 'announced-later', 'automatic', 'not-applicable'];
+    const mode = toText(application.mode).trim();
+    if (allowedModes.indexOf(mode) === -1) return null;
+
+    const normalizeDate = (value) => {
+      const text = toText(value).trim();
+      return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : '';
+    };
+
+    return {
+      mode,
+      opens: normalizeDate(application.opens),
+      deadline: normalizeDate(application.deadline),
+      academicYear: toText(application.academicYear).trim(),
+      label: toText(application.label).trim(),
+      sourceUrl: normalizeHref(application.sourceUrl),
+      checkedAt: normalizeDate(application.checkedAt),
+    };
+  }
+
+  function buildSearchText(card, source, application) {
     const provided = toText(card.search).trim();
-    if (provided) return normalizeSearchValue(provided);
+    const applicationText = application
+      ? [application.academicYear, application.label, application.opens, application.deadline].join(' ')
+      : '';
 
     return normalizeSearchValue([
+      provided,
       card.title,
       card.domain,
       card.desc,
       source ? source.label : '',
+      applicationText,
     ].join(' '));
   }
 
@@ -451,6 +517,7 @@
 
         toArray(section && section.cards).forEach((card, cardIndex) => {
           const source = normalizeSource(card && card.source);
+          const application = normalizeApplication(card && card.application);
           const badges = normalizeBadgeList(card && card.badges);
           const title = toText(card && card.title).trim();
           const href = normalizeHref(card && card.href);
@@ -479,11 +546,12 @@
               domain,
               desc,
               search: card && card.search,
-            }, source),
+            }, source, application),
             favicon,
             domain,
             badges,
             source,
+            application,
           });
         });
 
@@ -524,6 +592,7 @@
               href: card.source.href,
               label: card.source.label,
             } : null,
+            application: card.application,
             categoryId: card.categoryId,
             categoryLabel: card.categoryLabel,
             sectionId: card.sectionId,
@@ -632,6 +701,55 @@
     return '<img src="' + escapeHtml(src) + '" alt="" class="card-favicon" loading="lazy" onerror="this.onerror=null;this.src=\'' + FALLBACK_FAVICON + '\'">';
   }
 
+  function applicationMarkup(application) {
+    if (!application) return '';
+
+    const copy = getLocaleCopy().application;
+    let stateName = application.mode;
+    let status = copy.announcedLater;
+    let interval = copy.announcedLaterInterval.replace('{year}', application.academicYear || '2026/2027');
+
+    if (application.mode === 'automatic') {
+      status = copy.automatic;
+      interval = copy.automaticInterval;
+    } else if (application.mode === 'not-applicable') {
+      status = copy.notApplicable;
+      interval = copy.notApplicableInterval;
+    } else if (application.mode === 'fixed' && application.opens && application.deadline) {
+      const opens = new Date(application.opens + 'T00:00:00');
+      const deadline = new Date(application.deadline + 'T23:59:59');
+      const today = new Date();
+      const daysRemaining = Math.ceil((deadline.getTime() - today.getTime()) / 86400000);
+      const dateFormatter = new Intl.DateTimeFormat(state.locale, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+
+      interval = dateFormatter.format(opens) + ' – ' + dateFormatter.format(deadline);
+
+      if (today < opens) {
+        stateName = 'upcoming';
+        status = copy.upcoming;
+      } else if (today > deadline) {
+        stateName = 'closed';
+        status = copy.closed;
+      } else if (daysRemaining <= 14) {
+        stateName = 'ending-soon';
+        status = copy.endingSoon;
+      } else {
+        stateName = 'open';
+        status = copy.open;
+      }
+    }
+
+    return '<div class="card-application card-application--' + escapeHtml(stateName) + '">' +
+      '<span class="card-application__status">' + escapeHtml(status) + '</span>' +
+      '<span class="card-application__interval"><strong>' + escapeHtml(copy.interval) + ':</strong> ' +
+      escapeHtml(interval) + '</span>' +
+      '</div>';
+  }
+
   function cardMarkup(card, categoryId) {
     const badges = Array.isArray(card.badges) ? card.badges.map(badgeMarkup).join('') : '';
     const source = sourceMarkup(card.source);
@@ -645,6 +763,7 @@
       '<p class="card-title">' + escapeHtml(card.title) + '</p>' +
       '</div>' +
       '<p class="card-desc">' + escapeHtml(card.desc) + '</p>' +
+      applicationMarkup(card.application) +
       '<div class="card-foot">' +
       '<a href="' + escapeHtml(card.href) + '" target="_blank" rel="noopener" class="card-domain card-main-link">' + escapeHtml(card.domain) + '</a>' +
       '<div class="card-meta">' + badges + source + '</div>' +
