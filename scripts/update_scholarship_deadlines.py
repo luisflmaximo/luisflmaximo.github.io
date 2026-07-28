@@ -43,6 +43,18 @@ PORTUGUESE_MONTHS = {
     "outubro": 10,
     "novembro": 11,
     "dezembro": 12,
+    "jan": 1,
+    "fev": 2,
+    "mar": 3,
+    "abr": 4,
+    "mai": 5,
+    "jun": 6,
+    "jul": 7,
+    "ago": 8,
+    "set": 9,
+    "out": 10,
+    "nov": 11,
+    "dez": 12,
 }
 
 
@@ -99,16 +111,25 @@ def extract_json_object(text: str) -> dict[str, Any]:
     return json.loads(cleaned[start : end + 1])
 
 
-def deterministic_candidate(source_text: str, today: date) -> dict[str, Any]:
+def deterministic_candidate(
+    source_text: str,
+    today: date,
+    source_url: str = "",
+) -> dict[str, Any]:
     month_names = "|".join(PORTUGUESE_MONTHS)
     written_pattern = re.compile(
-        rf"\b(\d{{1,2}})\s+de\s+({month_names})\s+(?:de\s+)?(20\d{{2}})\b",
+        rf"\b(\d{{1,2}})\s+(?:de\s+)?({month_names})\.?\s+(?:de\s+)?(20\d{{2}})\b",
         re.IGNORECASE,
     )
     numeric_pattern = re.compile(r"\b(\d{1,2})[./-](\d{1,2})[./-](20\d{2})\b")
     yearless_range_pattern = re.compile(
         rf"\b(\d{{1,2}})\s+de\s+({month_names})\s+"
         rf"(?:a|até|e|[-–—])\s+(\d{{1,2}})\s+de\s+({month_names})\b",
+        re.IGNORECASE,
+    )
+    same_month_range_pattern = re.compile(
+        rf"\b(\d{{1,2}})\s+(?:a|até|[-–—])\s+"
+        rf"(\d{{1,2}})\s+de\s+({month_names})\b",
         re.IGNORECASE,
     )
     occurrences: list[tuple[int, int, date]] = []
@@ -133,6 +154,29 @@ def deterministic_candidate(source_text: str, today: date) -> dict[str, Any]:
 
     occurrences.sort(key=lambda item: item[0])
     candidates: list[tuple[date, date, str, str]] = []
+
+    for match in same_month_range_pattern.finditer(source_text):
+        evidence_start = max(0, match.start() - 180)
+        evidence_end = min(len(source_text), match.end() + 120)
+        evidence = source_text[evidence_start:evidence_end].strip()
+        if not re.search(r"candidat|inscri|submiss|prazo|bolsa", evidence.casefold()):
+            continue
+        month = PORTUGUESE_MONTHS[match.group(3).casefold()]
+        year_match = re.search(r"\b(20\d{2})[/-](20\d{2})\b", evidence)
+        if not year_match and "apifarmabolsamerito.uingress.com" not in source_url:
+            continue
+        year = int(year_match.group(1)) if year_match else today.year
+        academic_year = (
+            f"{year_match.group(1)}/{year_match.group(2)}"
+            if year_match
+            else f"{year}/{year + 1}"
+        )
+        try:
+            opens = date(year, month, int(match.group(1)))
+            deadline = date(year, month, int(match.group(2)))
+        except ValueError:
+            continue
+        candidates.append((opens, deadline, academic_year, evidence))
 
     for match in yearless_range_pattern.finditer(source_text):
         evidence_start = max(0, match.start() - 220)
@@ -169,7 +213,7 @@ def deterministic_candidate(source_text: str, today: date) -> dict[str, Any]:
             if not re.search(r"candidat|inscri|submiss|prazo|bolsa", lowered):
                 continue
             between = source_text[start_pos:end_pos].casefold()
-            if not re.search(r"\s(?:a|até|e)\s|[-–—]", between):
+            if not re.search(r"\s(?:a|até|e)\s|[-–—]|data de fim", between):
                 continue
             year_match = re.search(r"\b(20\d{2})[/-](20\d{2})\b", evidence)
             if year_match:
@@ -357,7 +401,7 @@ def update_cards(api_key: str, dry_run: bool) -> int:
             print(f"[preservada] {title}: {safe_error(exc)}")
             continue
 
-        candidate = deterministic_candidate(source_text, today)
+        candidate = deterministic_candidate(source_text, today, source_url)
         valid = validate_candidate(candidate, source_text, today)
         if api_key:
             try:

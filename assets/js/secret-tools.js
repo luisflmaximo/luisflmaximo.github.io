@@ -726,7 +726,7 @@
         year: 'numeric',
       });
 
-      interval = dateFormatter.format(opens) + ' – ' + dateFormatter.format(deadline);
+      interval = application.label || (dateFormatter.format(opens) + ' – ' + dateFormatter.format(deadline));
 
       if (today < opens) {
         stateName = 'upcoming';
