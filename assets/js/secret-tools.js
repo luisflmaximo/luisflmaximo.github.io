@@ -49,10 +49,13 @@
         endingSoon: 'A terminar',
         closed: 'Candidaturas encerradas',
         announcedLater: 'Datas por anunciar',
+        reference: 'Referência anterior',
+        formAvailable: 'Formulário disponível',
         automatic: 'Sem candidatura direta',
         notApplicable: 'Sem período anual',
         interval: 'Intervalo',
         announcedLaterInterval: 'por anunciar para {year}',
+        formAvailableInterval: 'prazo não indicado pela entidade',
         automaticInterval: 'não aplicável — atribuição pela instituição',
         notApplicableInterval: 'registo disponível durante todo o ano',
       },
@@ -97,10 +100,13 @@
         endingSoon: 'Ending soon',
         closed: 'Applications closed',
         announcedLater: 'Dates to be announced',
+        reference: 'Previous reference',
+        formAvailable: 'Form available',
         automatic: 'No direct application',
         notApplicable: 'No annual application window',
         interval: 'Application window',
         announcedLaterInterval: 'to be announced for {year}',
+        formAvailableInterval: 'the organisation does not specify a deadline',
         automaticInterval: 'not applicable — awarded by the institution',
         notApplicableInterval: 'registration available all year',
       },
@@ -145,10 +151,13 @@
         endingSoon: 'Termina pronto',
         closed: 'Candidaturas cerradas',
         announcedLater: 'Fechas por anunciar',
+        reference: 'Referencia anterior',
+        formAvailable: 'Formulario disponible',
         automatic: 'Sin candidatura directa',
         notApplicable: 'Sin periodo anual',
         interval: 'Periodo de candidatura',
         announcedLaterInterval: 'por anunciar para {year}',
+        formAvailableInterval: 'la entidad no indica un plazo',
         automaticInterval: 'no aplicable — concesión por la institución',
         notApplicableInterval: 'registro disponible durante todo el año',
       },
@@ -457,7 +466,15 @@
   function normalizeApplication(application) {
     if (!application) return null;
 
-    const allowedModes = ['fixed', 'announced-later', 'automatic', 'not-applicable'];
+    const allowedModes = [
+      'fixed',
+      'deadline-only',
+      'reference',
+      'form-available',
+      'announced-later',
+      'automatic',
+      'not-applicable',
+    ];
     const mode = toText(application.mode).trim();
     if (allowedModes.indexOf(mode) === -1) return null;
 
@@ -605,9 +622,9 @@
       });
     });
 
-    const totalCount = typeof data.totalCount === 'number'
-      ? data.totalCount
-      : catalog.length;
+    // Keep the headline, search placeholder and result counter aligned with
+    // the validated, deduplicated catalogue that users can actually search.
+    const totalCount = catalog.length;
 
     return {
       categories,
@@ -715,6 +732,34 @@
     } else if (application.mode === 'not-applicable') {
       status = copy.notApplicable;
       interval = copy.notApplicableInterval;
+    } else if (application.mode === 'reference') {
+      status = copy.reference;
+      interval = application.label;
+    } else if (application.mode === 'form-available') {
+      status = copy.formAvailable;
+      interval = application.label || copy.formAvailableInterval;
+    } else if (application.mode === 'deadline-only' && application.deadline) {
+      const deadline = new Date(application.deadline + 'T23:59:59');
+      const today = new Date();
+      const daysRemaining = Math.ceil((deadline.getTime() - today.getTime()) / 86400000);
+      const dateFormatter = new Intl.DateTimeFormat(state.locale, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+
+      interval = application.label || dateFormatter.format(deadline);
+
+      if (today > deadline) {
+        stateName = 'closed';
+        status = copy.closed;
+      } else if (daysRemaining <= 14) {
+        stateName = 'ending-soon';
+        status = copy.endingSoon;
+      } else {
+        stateName = 'open';
+        status = copy.open;
+      }
     } else if (application.mode === 'fixed' && application.opens && application.deadline) {
       const opens = new Date(application.opens + 'T00:00:00');
       const deadline = new Date(application.deadline + 'T23:59:59');

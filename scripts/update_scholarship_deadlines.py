@@ -13,6 +13,7 @@ import json
 import os
 import re
 import sys
+import unicodedata
 from datetime import date, datetime
 from io import BytesIO
 from pathlib import Path
@@ -309,10 +310,49 @@ def normalize_for_evidence(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip().casefold()
 
 
+def evidence_matches_card(title: str, source_url: str, evidence: str) -> bool:
+    """Reject dates for a different scholarship on shared catalogue pages."""
+    shared_catalogue_hosts = ("iscte-iul.pt",)
+    if not any(host in source_url.casefold() for host in shared_catalogue_hosts):
+        return True
+
+    normalized_title = unicodedata.normalize("NFKD", title.casefold())
+    normalized_title = "".join(
+        char for char in normalized_title if not unicodedata.combining(char)
+    )
+    normalized_evidence = unicodedata.normalize("NFKD", evidence.casefold())
+    normalized_evidence = "".join(
+        char for char in normalized_evidence if not unicodedata.combining(char)
+    )
+    ignored_words = {
+        "bolsa",
+        "bolsas",
+        "estudo",
+        "estudos",
+        "premio",
+        "premios",
+        "de",
+        "da",
+        "do",
+        "dos",
+        "das",
+    }
+    distinctive_words = {
+        word
+        for word in re.findall(r"[a-z0-9]+", normalized_title)
+        if len(word) >= 3 and word not in ignored_words
+    }
+    return bool(distinctive_words) and any(
+        word in normalized_evidence for word in distinctive_words
+    )
+
+
 def validate_candidate(
     candidate: dict[str, Any],
     source_text: str,
     today: date,
+    title: str,
+    source_url: str,
 ) -> tuple[date, date, str] | None:
     if candidate.get("found") is not True:
         return None
@@ -331,6 +371,8 @@ def validate_candidate(
     if not isinstance(evidence, str) or len(evidence.strip()) < 12:
         return None
     if normalize_for_evidence(evidence) not in normalize_for_evidence(source_text):
+        return None
+    if not evidence_matches_card(title, source_url, evidence):
         return None
 
     return opens, deadline, academic_year
@@ -402,11 +444,17 @@ def update_cards(api_key: str, dry_run: bool) -> int:
             continue
 
         candidate = deterministic_candidate(source_text, today, source_url)
-        valid = validate_candidate(candidate, source_text, today)
+        valid = validate_candidate(candidate, source_text, today, title, source_url)
         if api_key:
             try:
                 ai_candidate = ask_gemini(api_key, title, source_url, source_text, today)
-                ai_valid = validate_candidate(ai_candidate, source_text, today)
+                ai_valid = validate_candidate(
+                    ai_candidate,
+                    source_text,
+                    today,
+                    title,
+                    source_url,
+                )
                 if ai_valid:
                     valid = ai_valid
             except Exception as exc:

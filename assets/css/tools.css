@@ -496,6 +496,14 @@
   background: #fff8e1;
   color: #8a6508;
 }
+.card-application--reference .card-application__status {
+  background: #edf1f5;
+  color: #536273;
+}
+.card-application--form-available .card-application__status {
+  background: #e3f2fd;
+  color: #1565c0;
+}
 
 /* Footer: domain + badges */
 .card-foot {
