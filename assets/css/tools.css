@@ -23,6 +23,8 @@
   position: relative;
   display: flex;
   align-items: center;
+  min-width: 0;
+  overflow: hidden;
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-lg);
@@ -45,6 +47,7 @@
 }
 .search-input {
   flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
   font-family: var(--font-body);
@@ -55,6 +58,7 @@
 }
 .search-input::placeholder { color: var(--text-light); }
 .search-count {
+  flex: 0 0 auto;
   font-size: 0.72rem;
   color: var(--text-light);
   white-space: nowrap;
@@ -646,6 +650,13 @@
 @media (max-width: 640px) {
   .page-header .container,
   .tools-section .container { padding: 0 1.2rem; }
+  .search-bar {
+    padding: 0 0.8rem;
+  }
+  .search-count {
+    margin-left: 0.45rem;
+    font-size: 0.67rem;
+  }
   .cards-grid {
     grid-template-columns: 1fr;
     gap: 0.7rem;
