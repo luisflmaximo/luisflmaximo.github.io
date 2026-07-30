@@ -508,6 +508,10 @@
   background: #e3f2fd;
   color: #1565c0;
 }
+.card-application--form-closed .card-application__status {
+  background: #f3e8e8;
+  color: #9a3c3c;
+}
 
 /* Footer: domain + badges */
 .card-foot {

@@ -51,6 +51,7 @@
         announcedLater: 'Datas por anunciar',
         reference: 'Referência anterior',
         formAvailable: 'Formulário disponível',
+        formClosed: 'Formulário encerrado',
         automatic: 'Sem candidatura direta',
         notApplicable: 'Sem período anual',
         interval: 'Intervalo',
@@ -102,6 +103,7 @@
         announcedLater: 'Dates to be announced',
         reference: 'Previous reference',
         formAvailable: 'Form available',
+        formClosed: 'Form closed',
         automatic: 'No direct application',
         notApplicable: 'No annual application window',
         interval: 'Application window',
@@ -153,6 +155,7 @@
         announcedLater: 'Fechas por anunciar',
         reference: 'Referencia anterior',
         formAvailable: 'Formulario disponible',
+        formClosed: 'Formulario cerrado',
         automatic: 'Sin candidatura directa',
         notApplicable: 'Sin periodo anual',
         interval: 'Periodo de candidatura',
@@ -471,6 +474,7 @@
       'deadline-only',
       'reference',
       'form-available',
+      'form-closed',
       'announced-later',
       'automatic',
       'not-applicable',
@@ -738,6 +742,9 @@
     } else if (application.mode === 'form-available') {
       status = copy.formAvailable;
       interval = application.label || copy.formAvailableInterval;
+    } else if (application.mode === 'form-closed') {
+      status = copy.formClosed;
+      interval = application.label;
     } else if (application.mode === 'deadline-only' && application.deadline) {
       const deadline = new Date(application.deadline + 'T23:59:59');
       const today = new Date();
