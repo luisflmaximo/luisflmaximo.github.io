@@ -1,4 +1,4 @@
-# Luís Filipe Lopes Máximo — Portefólio Pessoal
+# Luís Filipe Lopes Máximo - Portefólio Pessoal
 
 Site pessoal de portefólio, currículo e projetos de Luís Filipe Lopes Máximo, conhecido como Luís Máximo, estudante de Gestão na [ISCTE Business School](https://ibs.iscte-iul.pt/), Lisboa.
 

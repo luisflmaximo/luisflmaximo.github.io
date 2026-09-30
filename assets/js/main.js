@@ -192,7 +192,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════════
-     INSTAGRAM — lazy-load embed.js via IntersectionObserver.
+     INSTAGRAM, lazy-load embed.js via IntersectionObserver.
      The script is only injected when the grid scrolls into view,
      saving ~100 KB of third-party script on every page load.
   ══════════════════════════════════════════════════════════════ */
@@ -254,7 +254,7 @@
     });
 
   /* ══════════════════════════════════════════════════════════════
-     LINKEDIN — lazy-load + adblocker detection.
+     LINKEDIN, lazy-load + adblocker detection.
 
      Strategy:
        1. Observe the LinkedIn section; load only when in viewport.
@@ -335,7 +335,7 @@
       });
     };
 
-    /* Probe: try to load badge script — resolves { blocked: boolean } */
+    /* Probe: try to load badge script, resolves { blocked: boolean } */
     let badgeScriptPromise = null;
     const probeLinkedIn = () => {
       if (badgeScriptPromise) return badgeScriptPromise;

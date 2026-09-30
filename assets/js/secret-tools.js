@@ -10,7 +10,7 @@
     : { matches: false };
   const LOCALE_COPY = {
     pt: {
-      title: 'Ferramentas — Luís Máximo',
+      title: 'Ferramentas, Luís Máximo',
       metaDescription: 'Área privada com ferramentas e referências úteis de Luís Máximo.',
       burgerLabel: 'Abrir menu',
       nav: {
@@ -45,7 +45,7 @@
       sourceLink: 'Ver Fonte Original',
     },
     en: {
-      title: 'Tools — Luís Máximo',
+      title: 'Tools, Luís Máximo',
       metaDescription: 'Private area with useful tools and references curated by Luís Máximo.',
       burgerLabel: 'Open menu',
       nav: {
@@ -80,7 +80,7 @@
       sourceLink: 'View Original Source',
     },
     es: {
-      title: 'Herramientas — Luís Máximo',
+      title: 'Herramientas, Luís Máximo',
       metaDescription: 'Área privada con herramientas y referencias útiles de Luís Máximo.',
       burgerLabel: 'Abrir menú',
       nav: {

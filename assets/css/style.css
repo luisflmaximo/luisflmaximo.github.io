@@ -1,5 +1,5 @@
 /* ================================================================
-   LUÍS MÁXIMO — PORTFOLIO
+   LUÍS MÁXIMO, PORTFOLIO
    Design: Editorial / Refined Personal
    ================================================================ */
 
@@ -316,7 +316,7 @@ select:focus-visible,
   color: var(--accent);
   background: var(--accent-soft);
 }
-/* Secret tab — hidden by default; JS removes [hidden] attr to reveal */
+/* Secret tab, hidden by default; JS removes [hidden] attr to reveal */
 .nav__secret-link { display: none; }
 html.secret-access-granted .nav__secret-link:not([hidden]),
 html.secret-page .nav__secret-link:not([hidden]) { display: block; }
@@ -441,7 +441,7 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
 .link--accent { color: var(--accent-mid); text-decoration: underline; text-underline-offset: 2px; }
 
 /* ================================================================
-   HOME — HERO
+   HOME, HERO
    ================================================================ */
 .hero {
   padding-top: calc(var(--nav-h) + 3.5rem);
@@ -569,7 +569,7 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
 .hero__social-link svg { width: 14px; height: 14px; }
 
 /* ================================================================
-   HOME — LINKEDIN SECTION
+   HOME, LINKEDIN SECTION
    ================================================================ */
 .linkedin-section {
   background: var(--surface);
@@ -827,7 +827,8 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
 }
 
 /* Academic PDF cards */
-.pdf-grid {
+.pdf-grid,
+.project-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1.25rem;
@@ -925,29 +926,44 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
 }
 
 /* ── Project collection and dedicated pages ── */
-.project-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.5rem;
-}
 .project-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+  padding: 1.5rem;
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  transition: all var(--transition);
+}
+.project-tile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity var(--transition);
 }
 .project-tile:hover {
-  transform: translateY(-4px);
-  border-color: #c9c3b6;
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--accent-light);
+  box-shadow: var(--shadow);
 }
+.project-tile:hover::before { opacity: 1; }
 .project-tile__image {
   display: block;
-  aspect-ratio: 16 / 9;
+  width: 100%;
+  aspect-ratio: 983 / 1390;
+  margin-bottom: 1rem;
   overflow: hidden;
-  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-sm);
 }
 .project-tile__image img {
   width: 100%;
@@ -955,28 +971,40 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
   object-fit: cover;
   transition: transform 0.5s ease;
 }
+.project-tile__image--contain img {
+  object-fit: contain;
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+  background: #fff;
+}
 .project-tile:hover .project-tile__image img { transform: scale(1.025); }
-.project-tile__body { padding: 1.35rem; }
+.project-tile__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 0;
+}
 .project-tile__eyebrow {
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.4rem;
   color: var(--accent-mid);
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 .project-tile__title {
-  margin-bottom: 0.5rem;
+  min-height: calc(0.95rem * 1.4 * 2);
+  margin-bottom: 0.4rem;
   font-family: var(--font-display);
-  font-size: 1.55rem;
+  font-size: 1.25rem;
   font-weight: 500;
   line-height: 1.15;
 }
 .project-tile__desc {
-  min-height: 3.3rem;
-  margin-bottom: 1rem;
+  flex: 1;
+  margin-bottom: 1.25rem;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 .project-detail-hero {
   padding: calc(var(--nav-h) + 4.5rem) 0 4rem;
@@ -1011,6 +1039,11 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
   width: 100%;
   aspect-ratio: 16 / 10;
   object-fit: cover;
+}
+.project-detail-hero__media--contain img {
+  object-fit: contain;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  background: #fff;
 }
 .project-stats {
   display: grid;
@@ -1109,12 +1142,6 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
   font-weight: 500;
 }
 .project-fact a:hover { color: var(--accent-mid); }
-.project-note {
-  margin-top: 1rem;
-  color: var(--text-light);
-  font-size: 0.72rem;
-  line-height: 1.45;
-}
 .project-feed { margin-top: 3rem; }
 .project-feed__header {
   display: flex;
@@ -1516,7 +1543,7 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
   min-height: 120px;
   overflow: hidden;
 }
-/* Slot with real embed — remove placeholder styling */
+/* Slot with real embed, remove placeholder styling */
 .instagram-embed-slot:has(blockquote) {
   aspect-ratio: unset;
   padding: 0;
@@ -1632,7 +1659,7 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
   line-height: 1.4;
 }
 .cv-contact-item svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 2px; color: rgba(255,255,255,0.55); }
-/* LinkedIn icon in sidebar shares same muted colour — no extra class needed */
+/* LinkedIn icon in sidebar shares same muted colour, no extra class needed */
 .cv-contact-item__linkedin-icon { color: rgba(255,255,255,0.55); }
 .cv-contact-item a {
   color: rgba(255,255,255,0.85);
@@ -1770,7 +1797,7 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
   line-height: 1.5;
 }
 .cv-entry__list li::before {
-  content: '—';
+  content: '•';
   position: absolute;
   left: 0;
   color: var(--accent-mid);
@@ -2054,7 +2081,6 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
   /* Instagram grid */
   .instagram-embed-grid { grid-template-columns: repeat(2, 1fr); }
 
-  .project-grid { grid-template-columns: 1fr; }
   .project-detail-hero { padding-top: calc(var(--nav-h) + 3rem); }
   .project-detail-hero__grid,
   .project-content-grid { grid-template-columns: 1fr; }
