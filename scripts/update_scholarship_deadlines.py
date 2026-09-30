@@ -125,11 +125,11 @@ def deterministic_candidate(
     numeric_pattern = re.compile(r"\b(\d{1,2})[./-](\d{1,2})[./-](20\d{2})\b")
     yearless_range_pattern = re.compile(
         rf"\b(\d{{1,2}})\s+de\s+({month_names})\s+"
-        rf"(?:a|até|e|[-–—])\s+(\d{{1,2}})\s+de\s+({month_names})\b",
+        rf"(?:a|até|e|[-–,])\s+(\d{{1,2}})\s+de\s+({month_names})\b",
         re.IGNORECASE,
     )
     same_month_range_pattern = re.compile(
-        rf"\b(\d{{1,2}})\s+(?:a|até|[-–—])\s+"
+        rf"\b(\d{{1,2}})\s+(?:a|até|[-–,])\s+"
         rf"(\d{{1,2}})\s+de\s+({month_names})\b",
         re.IGNORECASE,
     )
@@ -214,7 +214,7 @@ def deterministic_candidate(
             if not re.search(r"candidat|inscri|submiss|prazo|bolsa", lowered):
                 continue
             between = source_text[start_pos:end_pos].casefold()
-            if not re.search(r"\s(?:a|até|e)\s|[-–—]|data de fim", between):
+            if not re.search(r"\s(?:a|até|e)\s|[-–,]|data de fim", between):
                 continue
             year_match = re.search(r"\b(20\d{2})[/-](20\d{2})\b", evidence)
             if year_match:
@@ -478,7 +478,7 @@ def update_cards(api_key: str, dry_run: bool) -> int:
         if application != replacement:
             card["application"] = replacement
             updates += 1
-            print(f"[atualizada] {title}: {opens.isoformat()} — {deadline.isoformat()}")
+            print(f"[atualizada] {title}: {opens.isoformat()}, {deadline.isoformat()}")
         else:
             print(f"[confirmada] {title}: intervalo sem alterações")
 

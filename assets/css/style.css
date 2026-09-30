@@ -1,5 +1,5 @@
 /* ================================================================
-   LUÍS MÁXIMO — PORTFOLIO
+   LUÍS MÁXIMO, PORTFOLIO
    Design: Editorial / Refined Personal
    ================================================================ */
 
@@ -252,7 +252,7 @@ select:focus-visible,
   background: var(--accent);
   border-radius: 1px;
 }
-/* Secret tab — hidden by default; JS removes [hidden] attr to reveal */
+/* Secret tab, hidden by default; JS removes [hidden] attr to reveal */
 .nav__secret-link { display: none; }
 html.secret-access-granted .nav__secret-link:not([hidden]),
 html.secret-page .nav__secret-link:not([hidden]) { display: block; }
@@ -377,7 +377,7 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
 .link--accent { color: var(--accent-mid); text-decoration: underline; text-underline-offset: 2px; }
 
 /* ================================================================
-   HOME — HERO
+   HOME, HERO
    ================================================================ */
 .hero {
   padding-top: calc(var(--nav-h) + 3.5rem);
@@ -505,7 +505,7 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
 .hero__social-link svg { width: 14px; height: 14px; }
 
 /* ================================================================
-   HOME — LINKEDIN SECTION
+   HOME, LINKEDIN SECTION
    ================================================================ */
 .linkedin-section {
   background: var(--surface);
@@ -1247,7 +1247,7 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
   min-height: 120px;
   overflow: hidden;
 }
-/* Slot with real embed — remove placeholder styling */
+/* Slot with real embed, remove placeholder styling */
 .instagram-embed-slot:has(blockquote) {
   aspect-ratio: unset;
   padding: 0;
@@ -1363,7 +1363,7 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
   line-height: 1.4;
 }
 .cv-contact-item svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 2px; color: rgba(255,255,255,0.55); }
-/* LinkedIn icon in sidebar shares same muted colour — no extra class needed */
+/* LinkedIn icon in sidebar shares same muted colour, no extra class needed */
 .cv-contact-item__linkedin-icon { color: rgba(255,255,255,0.55); }
 .cv-contact-item a {
   color: rgba(255,255,255,0.85);
@@ -1501,7 +1501,7 @@ html.secret-page .nav__secret-link:not([hidden]) { display: block; }
   line-height: 1.5;
 }
 .cv-entry__list li::before {
-  content: '—';
+  content: '•';
   position: absolute;
   left: 0;
   color: var(--accent-mid);

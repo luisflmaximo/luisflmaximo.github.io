@@ -134,7 +134,7 @@
   }
 
   function formatTime(seconds) {
-    if (isNaN(seconds) || seconds === Infinity || seconds < 0) return '—';
+    if (isNaN(seconds) || seconds === Infinity || seconds < 0) return 'N/D';
     if (seconds < 60) return Math.round(seconds) + 's';
     const mins = Math.floor(seconds / 60);
     const secs = Math.round(seconds % 60);
@@ -5258,7 +5258,7 @@
         results.push(createExternalResult(
           file.name,
           data.downloadPage,
-          'Link de partilha gofile.io — temporário, válido enquanto o ficheiro tiver tráfego'
+          'Link de partilha gofile.io, temporário, válido enquanto o ficheiro tiver tráfego'
         ));
       } catch (err) {
         console.error('Gofile upload failed:', err);
@@ -6770,7 +6770,7 @@
           '<div style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius-lg); width: 90%; max-width: 480px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); text-align: center; position: relative;">',
           '<button onclick="document.getElementById(\'grades-share-popup\').remove()" style="position: absolute; top: 10px; right: 10px; border: none; background: transparent; font-size: 1.2rem; cursor: pointer; color: var(--text-light);">&times;</button>',
           '<h3 style="margin-bottom: 0.5rem; color: var(--text); font-size: 1.1rem; font-weight: 600;">Partilhar Pauta de Notas</h3>',
-          '<p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.2rem;">Qualquer pessoa com este link abre o site diretamente com as pautas por turma. Os dados estão embutidos no próprio link — sem servidores externos.</p>',
+          '<p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.2rem;">Qualquer pessoa com este link abre o site diretamente com as pautas por turma. Os dados estão embutidos no próprio link, sem servidores externos.</p>',
           '<div style="margin-bottom: 1.2rem; display: flex; justify-content: center;">',
           '<img src="' + qrUrl + '" alt="QR Code" style="border: 4px solid white; border-radius: var(--radius); box-shadow: var(--shadow-sm); width: 150px; height: 150px;" />',
           '</div>',

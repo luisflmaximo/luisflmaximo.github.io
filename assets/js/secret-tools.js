@@ -10,7 +10,7 @@
     : { matches: false };
   const LOCALE_COPY = {
     pt: {
-      title: 'Ferramentas — Luís Máximo',
+      title: 'Ferramentas, Luís Máximo',
       metaDescription: 'Área privada com ferramentas e referências úteis de Luís Máximo.',
       burgerLabel: 'Abrir menu',
       nav: {
@@ -57,12 +57,12 @@
         interval: 'Intervalo',
         announcedLaterInterval: 'por anunciar para {year}',
         formAvailableInterval: 'prazo não indicado pela entidade',
-        automaticInterval: 'não aplicável — atribuição pela instituição',
+        automaticInterval: 'não aplicável, atribuição pela instituição',
         notApplicableInterval: 'registo disponível durante todo o ano',
       },
     },
     en: {
-      title: 'Tools — Luís Máximo',
+      title: 'Tools, Luís Máximo',
       metaDescription: 'Private area with useful tools and references curated by Luís Máximo.',
       burgerLabel: 'Open menu',
       nav: {
@@ -109,12 +109,12 @@
         interval: 'Application window',
         announcedLaterInterval: 'to be announced for {year}',
         formAvailableInterval: 'the organisation does not specify a deadline',
-        automaticInterval: 'not applicable — awarded by the institution',
+        automaticInterval: 'not applicable, awarded by the institution',
         notApplicableInterval: 'registration available all year',
       },
     },
     es: {
-      title: 'Herramientas — Luís Máximo',
+      title: 'Herramientas, Luís Máximo',
       metaDescription: 'Área privada con herramientas y referencias útiles de Luís Máximo.',
       burgerLabel: 'Abrir menú',
       nav: {
@@ -161,7 +161,7 @@
         interval: 'Periodo de candidatura',
         announcedLaterInterval: 'por anunciar para {year}',
         formAvailableInterval: 'la entidad no indica un plazo',
-        automaticInterval: 'no aplicable — concesión por la institución',
+        automaticInterval: 'no aplicable, concesión por la institución',
         notApplicableInterval: 'registro disponible durante todo el año',
       },
     },
